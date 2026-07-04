@@ -45,3 +45,7 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# 검증 산출물 (스크린샷, 브라우저 로그)
+/.playwright-mcp/
+verify-*.png
