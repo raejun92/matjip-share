@@ -11,3 +11,8 @@ export function upsertPlace(list: Place[], incoming: Place): Place[] {
   next[index] = incoming;
   return next;
 }
+
+/** id의 핀을 제거한다. 없으면 그대로 (삭제 실시간 반영용) */
+export function removePlace(list: Place[], id: string): Place[] {
+  return list.filter((p) => p.id !== id);
+}

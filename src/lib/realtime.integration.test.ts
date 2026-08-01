@@ -11,11 +11,14 @@ const admin = createClient(
 
 const suffix = crypto.randomUUID().slice(0, 6);
 let cleanupUserId: string | null = null;
+let cleanupUserId2: string | null = null;
 
 afterAll(async () => {
-  if (cleanupUserId) {
-    await admin.from("places").delete().eq("user_id", cleanupUserId);
-    await admin.from("users").delete().eq("id", cleanupUserId);
+  for (const userId of [cleanupUserId, cleanupUserId2]) {
+    if (userId) {
+      await admin.from("places").delete().eq("user_id", userId);
+      await admin.from("users").delete().eq("id", userId);
+    }
   }
 });
 
@@ -56,5 +59,53 @@ describe("subscribeToPlaces (로컬 Supabase Realtime)", () => {
       ),
     ]);
     expect(receivedId).toBe(inserted!.id);
+  }, 20_000);
+
+  // AC3(슬라이스 5): UPDATE·DELETE 이벤트 전달
+  it("UPDATE와 DELETE 이벤트도 구독자에게 전달된다", async () => {
+    const author = await getOrCreateUser(`실시간2-${suffix}`.slice(0, 12));
+    cleanupUserId2 = author.id;
+
+    const events: { type: string; id: string }[] = [];
+    let resolveDone: () => void;
+    const done = new Promise<void>((r) => (resolveDone = r));
+    const unsubscribe = subscribeToPlaces({
+      onInsert: (id) => events.push({ type: "insert", id }),
+      onUpdate: (id) => events.push({ type: "update", id }),
+      onDelete: (id) => {
+        events.push({ type: "delete", id });
+        resolveDone();
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 1500));
+    const { data: row } = await admin
+      .from("places")
+      .insert({
+        user_id: author.id,
+        name: "수정삭제 확인집",
+        address: "",
+        lat: 37.5,
+        lng: 127.0,
+        rating: 2,
+      })
+      .select("id")
+      .single();
+    await new Promise((r) => setTimeout(r, 500));
+    await admin.from("places").update({ rating: 4 }).eq("id", row!.id);
+    await new Promise((r) => setTimeout(r, 500));
+    await admin.from("places").delete().eq("id", row!.id);
+
+    await Promise.race([
+      done,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("10초 내 delete 이벤트 미수신")), 10_000),
+      ),
+    ]);
+    unsubscribe();
+
+    expect(events).toContainEqual({ type: "insert", id: row!.id });
+    expect(events).toContainEqual({ type: "update", id: row!.id });
+    expect(events).toContainEqual({ type: "delete", id: row!.id });
   }, 20_000);
 });
