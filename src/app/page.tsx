@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import NameEntry from "@/components/NameEntry";
+import MapView from "@/components/MapView";
 import { getUserById, type User } from "@/lib/users";
 import { loadSessionUserId, clearSessionUserId } from "@/lib/session";
 
@@ -52,20 +53,5 @@ export default function Home() {
     );
   }
 
-  // 슬라이스 2에서 이 자리에 지도가 들어간다
-  return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-      <span
-        data-testid="my-color"
-        className="inline-block h-16 w-16 rounded-full border-4 border-white shadow-lg"
-        style={{ backgroundColor: user!.color }}
-      />
-      <p className="text-xl">
-        <strong>{user!.name}</strong> 님, 환영해요!
-      </p>
-      <p className="text-sm text-gray-500">
-        이 색이 지도에서 내 맛집 핀 색이 돼요 (지도는 곧 추가됩니다)
-      </p>
-    </main>
-  );
+  return <MapView user={user!} />;
 }

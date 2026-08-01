@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3000;
-const baseURL = `http://127.0.0.1:${PORT}`;
+// 카카오 개발자 앱에 등록된 도메인은 localhost:3000 (127.0.0.1은 SDK가 거부함)
+const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
