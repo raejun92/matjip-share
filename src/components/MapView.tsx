@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import KakaoMap from "./KakaoMap";
 import PlacePins from "./PlacePins";
 import AddPlaceSheet from "./AddPlaceSheet";
-import { getPlaces, type Place } from "@/lib/places";
+import { getPlaces, getPlaceById, type Place } from "@/lib/places";
+import { upsertPlace } from "@/lib/place-list";
+import { subscribeToPlaces } from "@/lib/realtime";
 import type { User } from "@/lib/users";
 import type { KakaoMapInstance } from "@/types/kakao";
 
@@ -24,6 +26,20 @@ export default function MapView({ user }: Props) {
     getPlaces()
       .then(setPlaces)
       .catch(() => setLoadError("저장된 맛집을 불러오지 못했어요."));
+
+    // 친구가 추가한 핀 실시간 반영 (PRD §6.5).
+    // 페이로드엔 작성자 join이 없으므로 id로 재조회. 내 핀은 id dedupe로 중복 방지.
+    return subscribeToPlaces({
+      onInsert: (placeId) => {
+        getPlaceById(placeId)
+          .then((place) => {
+            if (place) setPlaces((prev) => upsertPlace(prev, place));
+          })
+          .catch(() => {
+            // 재조회 실패는 치명적이지 않음 — 다음 새로고침 때 반영된다
+          });
+      },
+    });
   }, []);
 
   const handleMapReady = useCallback(
@@ -32,11 +48,24 @@ export default function MapView({ user }: Props) {
   );
   const handleSelect = useCallback((place: Place) => setSelected(place), []);
 
+  // 지도 로드 전에 저장이 끝나면 이동이 유실된다 (느린 회선에서 재현) — 준비되면 실행
+  const pendingPanRef = useRef<Place | null>(null);
+
   function panTo(place: Place) {
     if (map && window.kakao) {
       map.panTo(new window.kakao.maps.LatLng(place.lat, place.lng));
+    } else {
+      pendingPanRef.current = place;
     }
   }
+
+  useEffect(() => {
+    if (map && window.kakao && pendingPanRef.current) {
+      const place = pendingPanRef.current;
+      pendingPanRef.current = null;
+      map.panTo(new window.kakao.maps.LatLng(place.lat, place.lng));
+    }
+  }, [map]);
 
   function handleAdded(place: Place) {
     setPlaces((prev) => [...prev, place]);

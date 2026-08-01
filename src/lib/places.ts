@@ -48,6 +48,17 @@ function toPlace(row: PlaceRow): Place {
   };
 }
 
+/** 핀 하나 조회 (작성자 포함) — 실시간 이벤트 수신 시 사용. 없으면 null */
+export async function getPlaceById(id: string): Promise<Place | null> {
+  const { data, error } = await supabase
+    .from("places")
+    .select(SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`맛집 조회 실패: ${error.message}`);
+  return data ? toPlace(data as unknown as PlaceRow) : null;
+}
+
 /** 전체 핀 조회 (작성자 이름·색상 포함) — AC4 */
 export async function getPlaces(): Promise<Place[]> {
   const { data, error } = await supabase

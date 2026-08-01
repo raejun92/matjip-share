@@ -38,9 +38,10 @@ test("맛집을 검색해 별점과 함께 저장하면 내 색 핀이 생긴다
   await page.getByRole("button", { name: "저장", exact: true }).click();
 
   // AC5: 시트 닫힘 + 내 색 핀 등장
+  // title엔 작성자가 포함되므로 이전 실행이 남긴 같은 이름의 핀과 구분된다
   await expect(page.getByTestId("add-place-sheet")).not.toBeVisible();
   const myPin = page.locator(
-    `[data-testid="place-pin"][data-place-name="${placeName}"]`,
+    `[data-testid="place-pin"][title="${placeName} (${name})"]`,
   );
   await expect(myPin.first()).toBeVisible({ timeout: 10_000 });
   const pinFill = await myPin
@@ -93,7 +94,7 @@ test("재접속하면 저장했던 핀이 다시 보인다", async ({ page }) =>
   await expect(page.getByTestId("my-badge")).toContainText(name);
   await expect(
     page
-      .locator(`[data-testid="place-pin"][data-place-name="${placeName}"]`)
+      .locator(`[data-testid="place-pin"][title="${placeName} (${name})"]`)
       .first(),
   ).toBeVisible({ timeout: 15_000 });
 });
