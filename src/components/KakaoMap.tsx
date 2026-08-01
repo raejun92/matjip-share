@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { buildKakaoSdkUrl, DEFAULT_CENTER, DEFAULT_LEVEL } from "@/lib/kakao";
+import type { KakaoMapInstance } from "@/types/kakao";
 
 const SCRIPT_ID = "kakao-maps-sdk";
 
@@ -12,6 +13,7 @@ type Props = {
 
 export default function KakaoMap({ onMapReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<KakaoMapInstance | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,11 +21,18 @@ export default function KakaoMap({ onMapReady }: Props) {
 
     function createMap() {
       if (cancelled || !containerRef.current || !window.kakao) return;
+      // StrictMode 이중 실행 가드: kakao.maps.load 콜백이 동기 실행되면
+      // cancelled 플래그만으로는 지도가 2개 생겨 오버레이가 중복된다
+      if (mapRef.current) {
+        onMapReady?.(mapRef.current);
+        return;
+      }
       const { maps } = window.kakao;
       const map = new maps.Map(containerRef.current, {
         center: new maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
         level: DEFAULT_LEVEL,
       });
+      mapRef.current = map;
       onMapReady?.(map);
     }
 
