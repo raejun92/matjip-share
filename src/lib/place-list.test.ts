@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { upsertPlace } from "./place-list";
+import { upsertPlace, removePlace } from "./place-list";
 import type { Place } from "./places";
 
 const place = (id: string, name = "집", rating = 3): Place => ({
@@ -37,5 +37,24 @@ describe("upsertPlace", () => {
     const list = [place("a")];
     upsertPlace(list, place("b"));
     expect(list).toHaveLength(1);
+  });
+});
+
+// AC1(슬라이스 5): id로 제거, 없으면 그대로
+describe("removePlace", () => {
+  it("해당 id의 핀을 제거한다", () => {
+    const list = [place("a"), place("b"), place("c")];
+    expect(removePlace(list, "b").map((p) => p.id)).toEqual(["a", "c"]);
+  });
+
+  it("없는 id면 목록이 그대로다", () => {
+    const list = [place("a")];
+    expect(removePlace(list, "zzz")).toEqual(list);
+  });
+
+  it("원본 배열을 변경하지 않는다", () => {
+    const list = [place("a"), place("b")];
+    removePlace(list, "a");
+    expect(list).toHaveLength(2);
   });
 });

@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 import { getOrCreateUser, type User } from "./users";
-import { addPlace, getPlaces } from "./places";
+import {
+  addPlace,
+  getPlaces,
+  updatePlaceRating,
+  deletePlace,
+  getPlaceById,
+} from "./places";
 
 // 로컬 Supabase 스택 대상 통합 테스트 (users와 동일 패턴)
 const admin = createClient(
@@ -71,5 +77,44 @@ describe("addPlace / getPlaces (로컬 Supabase)", () => {
         rating: 3,
       }),
     ).rejects.toThrow();
+  });
+});
+
+// AC2(슬라이스 5): 수정/삭제가 DB에 반영된다
+describe("updatePlaceRating / deletePlace (로컬 Supabase)", () => {
+  it("별점을 수정하면 반영된 핀을 반환한다", async () => {
+    const place = await addPlace({
+      userId: author.id,
+      name: "별점 바꿀 집",
+      address: "",
+      lat: 37.5,
+      lng: 127.0,
+      rating: 2,
+    });
+
+    const updated = await updatePlaceRating(place.id, 5);
+    expect(updated.rating).toBe(5);
+    expect(updated.id).toBe(place.id);
+    expect(updated.author.name).toBe(author.name);
+  });
+
+  it("범위 밖 별점 수정은 거부된다", async () => {
+    await expect(updatePlaceRating(crypto.randomUUID(), 0)).rejects.toThrow(
+      /별점/,
+    );
+  });
+
+  it("핀을 삭제하면 조회되지 않는다", async () => {
+    const place = await addPlace({
+      userId: author.id,
+      name: "지울 집",
+      address: "",
+      lat: 37.5,
+      lng: 127.0,
+      rating: 1,
+    });
+
+    await deletePlace(place.id);
+    expect(await getPlaceById(place.id)).toBeNull();
   });
 });

@@ -89,3 +89,27 @@ export async function addPlace(input: NewPlace): Promise<Place> {
   if (error) throw new Error(`맛집 저장 실패: ${error.message}`);
   return toPlace(data as unknown as PlaceRow);
 }
+
+/** 별점 수정 (본인 핀 제한은 UI 레벨 — PRD §6.6) */
+export async function updatePlaceRating(
+  id: string,
+  rating: number,
+): Promise<Place> {
+  if (!isValidRating(rating)) {
+    throw new Error("별점은 1~5 사이 정수여야 합니다.");
+  }
+  const { data, error } = await supabase
+    .from("places")
+    .update({ rating })
+    .eq("id", id)
+    .select(SELECT)
+    .single();
+  if (error) throw new Error(`별점 수정 실패: ${error.message}`);
+  return toPlace(data as unknown as PlaceRow);
+}
+
+/** 핀 삭제 (본인 핀 제한은 UI 레벨 — PRD §6.6) */
+export async function deletePlace(id: string): Promise<void> {
+  const { error } = await supabase.from("places").delete().eq("id", id);
+  if (error) throw new Error(`삭제 실패: ${error.message}`);
+}
