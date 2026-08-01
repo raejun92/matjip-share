@@ -54,6 +54,6 @@
 
 ## 로컬 DB 리셋 주의
 
-`supabase db reset` 대신 **`bash scripts/db-reset.sh`** 를 쓸 것.
-로컬 Realtime이 reset 시 publication 멤버십을 유실하므로 재등록 + Realtime 재시작이 필요하다
-(스크립트가 처리). 클라우드에선 마이그레이션만으로 충분하다.
+`bash scripts/db-reset.sh` 권장 (= `supabase db reset` + Realtime 워밍업 15초 대기).
+reset 직후엔 Realtime 서비스가 아직 준비되지 않아 실시간 테스트가 이벤트 미수신으로
+실패할 수 있다. 클라우드에선 해당 없음.
