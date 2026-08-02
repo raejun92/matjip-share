@@ -10,6 +10,10 @@ interface KakaoLatLngBounds {
   extend(latlng: unknown): void;
 }
 
+interface KakaoMouseEvent {
+  latLng: { getLat(): number; getLng(): number };
+}
+
 interface KakaoOverlay {
   setMap(map: unknown | null): void;
 }
@@ -30,9 +34,21 @@ declare global {
           yAnchor?: number;
         }) => KakaoOverlay;
         LatLngBounds: new () => KakaoLatLngBounds;
+        event: {
+          addListener(
+            target: unknown,
+            type: string,
+            handler: (e: KakaoMouseEvent) => void,
+          ): void;
+          removeListener(
+            target: unknown,
+            type: string,
+            handler: (e: KakaoMouseEvent) => void,
+          ): void;
+        };
       };
     };
   }
 }
 
-export type { KakaoMapInstance, KakaoOverlay };
+export type { KakaoMapInstance, KakaoOverlay, KakaoMouseEvent };

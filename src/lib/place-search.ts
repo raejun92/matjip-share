@@ -37,3 +37,28 @@ export function mapKakaoDocuments(docs: KakaoDocument[]): PlaceCandidate[] {
     ];
   });
 }
+
+/** 카테고리 검색(x,y 기준) 응답 — distance(m, 문자열) 포함 */
+export type KakaoNearbyDocument = KakaoDocument & { distance: string };
+
+export type NearbyCandidate = PlaceCandidate & { distanceM: number };
+
+const NEARBY_LIMIT = 15;
+
+/** 여러 카테고리 결과를 kakaoId dedupe + 거리순으로 병합한다 (slice 6, AC1) */
+export function mergeNearby(
+  lists: KakaoNearbyDocument[][],
+): NearbyCandidate[] {
+  const byId = new Map<string, NearbyCandidate>();
+  for (const docs of lists) {
+    for (const doc of docs) {
+      if (byId.has(doc.id)) continue;
+      const [mapped] = mapKakaoDocuments([doc]);
+      if (!mapped) continue;
+      byId.set(doc.id, { ...mapped, distanceM: Number(doc.distance) || 0 });
+    }
+  }
+  return [...byId.values()]
+    .sort((a, b) => a.distanceM - b.distanceM)
+    .slice(0, NEARBY_LIMIT);
+}

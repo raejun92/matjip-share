@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import StarRatingInput from "./StarRatingInput";
 import type { PlaceCandidate } from "@/lib/place-search";
 import { addPlace, type Place } from "@/lib/places";
-import { RATING_MIN, RATING_MAX, isValidRating } from "@/lib/rating";
+import { isValidRating } from "@/lib/rating";
 import type { User } from "@/lib/users";
 
 type Props = {
@@ -135,24 +136,7 @@ export default function AddPlaceSheet({ user, onAdded, onClose }: Props) {
             <p className="font-semibold">{selected.name}</p>
             <p className="text-sm text-gray-500">{selected.address}</p>
           </div>
-          <div className="flex items-center gap-1" role="group" aria-label="별점">
-            {Array.from(
-              { length: RATING_MAX - RATING_MIN + 1 },
-              (_, i) => i + RATING_MIN,
-            ).map((n) => (
-              <button
-                key={n}
-                type="button"
-                aria-label={`별점 ${n}점`}
-                onClick={() => setRating(n)}
-                className={`text-3xl leading-none ${
-                  n <= rating ? "text-yellow-400" : "text-gray-300"
-                }`}
-              >
-                ★
-              </button>
-            ))}
-          </div>
+          <StarRatingInput value={rating} onChange={setRating} />
           <div className="flex gap-2">
             <button
               type="button"
