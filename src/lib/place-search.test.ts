@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { mapKakaoDocuments, type PlaceCandidate } from "./place-search";
+import {
+  mapKakaoDocuments,
+  mergeNearby,
+  type PlaceCandidate,
+  type NearbyCandidate,
+} from "./place-search";
 
 // 카카오 로컬 키워드 검색 응답의 documents 항목 (실제 형태 발췌)
 const kakaoDoc = {
@@ -57,5 +62,57 @@ describe("mapKakaoDocuments", () => {
       lng: 126.977943192076,
     };
     expect(c).toEqual(expected);
+  });
+});
+
+// AC1(슬라이스 6): 카테고리 검색 결과 병합 — kakaoId dedupe + 거리순
+const nearbyDoc = (id: string, distance: string, name = "가게" + id) => ({
+  ...kakaoDoc,
+  id,
+  place_name: name,
+  distance,
+});
+
+describe("mergeNearby", () => {
+  it("두 목록을 거리순으로 병합한다", () => {
+    const food = [nearbyDoc("a", "120"), nearbyDoc("b", "40")];
+    const cafe = [nearbyDoc("c", "80")];
+    const result = mergeNearby([food, cafe]);
+    expect(result.map((r) => r.kakaoId)).toEqual(["b", "c", "a"]);
+  });
+
+  it("같은 kakaoId는 한 번만 남긴다", () => {
+    const result = mergeNearby([
+      [nearbyDoc("a", "50")],
+      [nearbyDoc("a", "50"), nearbyDoc("b", "60")],
+    ]);
+    expect(result.map((r) => r.kakaoId)).toEqual(["a", "b"]);
+  });
+
+  it("distance를 숫자(m)로 변환해 담는다", () => {
+    const [first] = mergeNearby([[nearbyDoc("a", "77")]]);
+    const expected: NearbyCandidate = {
+      kakaoId: "a",
+      name: "가게a",
+      address: "서울 중구 세종대로 지하 101",
+      category: "스타벅스",
+      lat: 37.5668245376668,
+      lng: 126.977943192076,
+      distanceM: 77,
+    };
+    expect(first).toEqual(expected);
+  });
+
+  it("최대 15개까지만 반환한다", () => {
+    const many = Array.from({ length: 20 }, (_, i) =>
+      nearbyDoc(`id${i}`, String(i)),
+    );
+    expect(mergeNearby([many])).toHaveLength(15);
+  });
+
+  it("좌표가 깨진 항목은 제외한다", () => {
+    const bad = { ...nearbyDoc("bad", "10"), x: "??" };
+    const result = mergeNearby([[bad, nearbyDoc("ok", "20")]]);
+    expect(result.map((r) => r.kakaoId)).toEqual(["ok"]);
   });
 });

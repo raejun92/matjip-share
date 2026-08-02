@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import StarRatingInput from "./StarRatingInput";
 import {
   updatePlaceRating,
   deletePlace,
   type Place,
 } from "@/lib/places";
-import { RATING_MIN, RATING_MAX, isValidRating } from "@/lib/rating";
+import { RATING_MAX, isValidRating } from "@/lib/rating";
 
 type Props = {
   place: Place;
@@ -67,27 +68,13 @@ export default function PlaceInfoCard({
         <div>
           <p className="font-bold">{place.name}</p>
           {mode === "edit" ? (
-            <div
-              className="mt-1 flex items-center gap-0.5"
-              role="group"
-              aria-label="별점 수정"
-            >
-              {Array.from(
-                { length: RATING_MAX - RATING_MIN + 1 },
-                (_, i) => i + RATING_MIN,
-              ).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  aria-label={`별점 ${n}점으로 변경`}
-                  onClick={() => setRating(n)}
-                  className={`text-2xl leading-none ${
-                    n <= rating ? "text-yellow-400" : "text-gray-300"
-                  }`}
-                >
-                  ★
-                </button>
-              ))}
+            <div className="mt-1">
+              <StarRatingInput
+                value={rating}
+                onChange={setRating}
+                size="md"
+                ariaLabel={(n) => `별점 ${n}점으로 변경`}
+              />
             </div>
           ) : (
             <p className="text-sm text-yellow-500">

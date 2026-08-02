@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import KakaoMap from "./KakaoMap";
 import PlacePins from "./PlacePins";
 import AddPlaceSheet from "./AddPlaceSheet";
+import NearbySheet from "./NearbySheet";
 import PlaceInfoCard from "./PlaceInfoCard";
 import { getPlaces, getPlaceById, type Place } from "@/lib/places";
 import { upsertPlace, removePlace } from "@/lib/place-list";
@@ -22,6 +23,9 @@ export default function MapView({ user }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Place | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // 위치로 추가 (slice 6): 지도 탭 지점과 주변 시트 열림 여부
+  const [pickedPoint, setPickedPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyOpen, setNearbyOpen] = useState(false);
 
   useEffect(() => {
     getPlaces()
@@ -74,6 +78,48 @@ export default function MapView({ user }: Props) {
     map.setBounds(bounds);
   }, [map, places]);
 
+  // 지도 빈 곳 탭 → 지점 선택 (slice 6). 열려 있던 카드/시트는 닫는다.
+  useEffect(() => {
+    if (!map || !window.kakao) return;
+    const { event } = window.kakao.maps;
+    const handleClick = (e: { latLng: { getLat(): number; getLng(): number } }) => {
+      setPickedPoint({ lat: e.latLng.getLat(), lng: e.latLng.getLng() });
+      setNearbyOpen(false);
+      setSelected(null);
+      setSheetOpen(false);
+    };
+    event.addListener(map, "click", handleClick);
+    return () => event.removeListener(map, "click", handleClick);
+  }, [map]);
+
+  // 탭 지점 임시 마커 (회색)
+  const pickedOverlayRef = useRef<{ setMap(m: unknown | null): void } | null>(null);
+  useEffect(() => {
+    pickedOverlayRef.current?.setMap(null);
+    pickedOverlayRef.current = null;
+    if (!map || !window.kakao || !pickedPoint) return;
+    const { maps } = window.kakao;
+    const content = document.createElement("div");
+    content.dataset.testid = "picked-point";
+    content.style.cssText = "line-height:0;pointer-events:none;";
+    content.innerHTML = `
+<svg width="28" height="35" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
+  <path d="M16 0C7.2 0 0 7.2 0 16c0 10.7 13.1 22.2 14.6 23.4a2.2 2.2 0 0 0 2.8 0C18.9 38.2 32 26.7 32 16 32 7.2 24.8 0 16 0z"
+        fill="#6B7280" stroke="white" stroke-width="2"/>
+  <circle cx="16" cy="15" r="5.5" fill="white"/>
+</svg>`;
+    const overlay = new maps.CustomOverlay({
+      position: new maps.LatLng(pickedPoint.lat, pickedPoint.lng),
+      content,
+      yAnchor: 1,
+    });
+    overlay.setMap(map);
+    pickedOverlayRef.current = overlay;
+    return () => {
+      overlay.setMap(null);
+    };
+  }, [map, pickedPoint]);
+
   // 지도 로드 전에 저장이 끝나면 이동이 유실된다 (느린 회선에서 재현) — 준비되면 실행
   const pendingPanRef = useRef<Place | null>(null);
 
@@ -96,6 +142,8 @@ export default function MapView({ user }: Props) {
   function handleAdded(place: Place) {
     setPlaces((prev) => [...prev, place]);
     setSheetOpen(false);
+    setNearbyOpen(false);
+    setPickedPoint(null);
     setSelected(place);
     panTo(place);
   }
@@ -146,6 +194,41 @@ export default function MapView({ user }: Props) {
           user={user}
           onAdded={handleAdded}
           onClose={() => setSheetOpen(false)}
+        />
+      )}
+
+      {/* 탭 지점 popover (slice 6) */}
+      {pickedPoint && !nearbyOpen && !sheetOpen && (
+        <div className="absolute inset-x-0 bottom-6 z-10 flex justify-center">
+          <div className="flex items-center gap-1 rounded-full bg-white py-1.5 pl-4 pr-1.5 shadow-lg">
+            <button
+              type="button"
+              onClick={() => setNearbyOpen(true)}
+              className="text-sm font-semibold text-blue-600"
+            >
+              📍 이 위치 주변에서 찾기
+            </button>
+            <button
+              type="button"
+              onClick={() => setPickedPoint(null)}
+              aria-label="지점 선택 취소"
+              className="rounded-full px-2.5 py-1 text-gray-400 hover:bg-gray-100"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pickedPoint && nearbyOpen && (
+        <NearbySheet
+          user={user}
+          point={pickedPoint}
+          onAdded={handleAdded}
+          onClose={() => {
+            setNearbyOpen(false);
+            setPickedPoint(null);
+          }}
         />
       )}
 
