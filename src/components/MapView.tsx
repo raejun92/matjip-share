@@ -33,7 +33,11 @@ export default function MapView({ user }: Props) {
     const refetchAndUpsert = (placeId: string) => {
       getPlaceById(placeId)
         .then((place) => {
-          if (place) setPlaces((prev) => upsertPlace(prev, place));
+          if (place) {
+            setPlaces((prev) => upsertPlace(prev, place));
+            // 열려 있는 정보 카드도 갱신 (친구가 별점을 고치는 중일 수 있다)
+            setSelected((prev) => (prev?.id === place.id ? place : prev));
+          }
         })
         .catch(() => {
           // 재조회 실패는 치명적이지 않음 — 다음 새로고침 때 반영된다
