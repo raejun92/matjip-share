@@ -95,6 +95,44 @@ test("친구 핀에는 수정/삭제 버튼이 보이지 않는다", async ({ br
   }
 });
 
+test("카드를 열어둔 채 친구가 별점을 고치면 카드도 실시간 갱신된다", async ({
+  browser,
+}) => {
+  const stamp = Math.random().toString(36).slice(2, 8);
+  const nameA = `수a${stamp}`.slice(0, 12);
+  const nameB = `카b${stamp}`.slice(0, 12);
+  const ctxA = await browser.newContext();
+  const ctxB = await browser.newContext();
+  const pageA = await ctxA.newPage();
+  const pageB = await ctxB.newPage();
+
+  try {
+    await enterAs(pageA, nameA);
+    const placeName = await addPlaceViaUi(pageA, "시청 커피", "별점 4점");
+
+    // B가 그 핀의 카드를 열어둔다
+    await enterAs(pageB, nameB);
+    const pinOnB = pageB.locator(
+      `[data-testid="place-pin"][title="${placeName} (${nameA})"]`,
+    );
+    await expect(pinOnB.first()).toBeVisible({ timeout: 15_000 });
+    await pinOnB.first().click();
+    const infoOnB = pageB.getByTestId("place-info");
+    await expect(infoOnB).toContainText("4점");
+
+    // A가 별점 수정 → B의 열린 카드가 갱신된다
+    const infoOnA = pageA.getByTestId("place-info");
+    await infoOnA.getByRole("button", { name: "별점 수정" }).click();
+    await infoOnA.getByRole("button", { name: "별점 2점으로 변경" }).click();
+    await infoOnA.getByRole("button", { name: "저장", exact: true }).click();
+
+    await expect(infoOnB).toContainText("2점", { timeout: 15_000 });
+  } finally {
+    await ctxA.close();
+    await ctxB.close();
+  }
+});
+
 test("친구가 핀을 삭제하면 내 지도에서도 실시간으로 사라진다", async ({
   browser,
 }) => {
