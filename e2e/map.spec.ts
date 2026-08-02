@@ -27,3 +27,47 @@ test("이름 입력 후 카카오맵이 렌더링된다", async ({ page }) => {
   await expect(badge).toBeVisible();
   await expect(badge).toContainText(name);
 });
+
+// fit bounds: 기본 중심(서울시청)에서 먼 핀도 접속 시 화면에 들어온다
+test("멀리 있는 친구 핀도 접속하면 지도에 보인다", async ({ browser }) => {
+  const stamp = Math.random().toString(36).slice(2, 8);
+  const nameA = `멀a${stamp}`.slice(0, 12);
+  const nameB = `멀b${stamp}`.slice(0, 12);
+  const ctxA = await browser.newContext();
+  const ctxB = await browser.newContext();
+  const pageA = await ctxA.newPage();
+  const pageB = await ctxB.newPage();
+
+  try {
+    // A가 부산(기본 뷰포트 밖) 맛집 저장
+    await pageA.goto("/");
+    await pageA.getByRole("textbox", { name: "이름" }).fill(nameA);
+    await pageA.getByRole("button", { name: "시작하기" }).click();
+    await pageA.getByRole("button", { name: "+ 맛집 추가" }).click();
+    await pageA.getByRole("textbox", { name: "가게 검색" }).fill("부산 돼지국밥");
+    await pageA.getByRole("button", { name: "검색", exact: true }).click();
+    const first = pageA
+      .getByTestId("add-place-sheet")
+      .locator("li button")
+      .first();
+    await expect(first).toBeVisible({ timeout: 10_000 });
+    const placeName = await first.locator("span").first().textContent();
+    await first.click();
+    await pageA.getByRole("button", { name: "별점 4점" }).click();
+    await pageA.getByRole("button", { name: "저장", exact: true }).click();
+    await expect(pageA.getByTestId("place-info")).toBeVisible();
+
+    // B가 새로 접속 → fit bounds 덕분에 부산 핀이 뷰포트 안에 들어온다
+    await pageB.goto("/");
+    await pageB.getByRole("textbox", { name: "이름" }).fill(nameB);
+    await pageB.getByRole("button", { name: "시작하기" }).click();
+    await expect(
+      pageB
+        .locator(`[data-testid="place-pin"][title="${placeName} (${nameA})"]`)
+        .first(),
+    ).toBeVisible({ timeout: 15_000 });
+  } finally {
+    await ctxA.close();
+    await ctxB.close();
+  }
+});

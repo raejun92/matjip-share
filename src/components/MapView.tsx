@@ -55,6 +55,21 @@ export default function MapView({ user }: Props) {
   );
   const handleSelect = useCallback((place: Place) => setSelected(place), []);
 
+  // 접속 시 저장된 핀이 전부 화면에 들어오게 1회 범위 맞춤.
+  // 없으면 기본 중심(서울시청) 밖 핀이 컬링돼 "빈 지도"로 보인다.
+  const didFitBoundsRef = useRef(false);
+  useEffect(() => {
+    if (didFitBoundsRef.current || !map || !window.kakao || places.length === 0)
+      return;
+    didFitBoundsRef.current = true;
+    const { maps } = window.kakao;
+    const bounds = new maps.LatLngBounds();
+    for (const place of places) {
+      bounds.extend(new maps.LatLng(place.lat, place.lng));
+    }
+    map.setBounds(bounds);
+  }, [map, places]);
+
   // 지도 로드 전에 저장이 끝나면 이동이 유실된다 (느린 회선에서 재현) — 준비되면 실행
   const pendingPanRef = useRef<Place | null>(null);
 
