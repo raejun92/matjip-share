@@ -3,6 +3,11 @@
 /** 지도 인스턴스 중 우리가 쓰는 메서드 */
 interface KakaoMapInstance {
   panTo(latlng: unknown): void;
+  setBounds(bounds: unknown): void;
+}
+
+interface KakaoLatLngBounds {
+  extend(latlng: unknown): void;
 }
 
 interface KakaoOverlay {
@@ -24,6 +29,7 @@ declare global {
           content: HTMLElement;
           yAnchor?: number;
         }) => KakaoOverlay;
+        LatLngBounds: new () => KakaoLatLngBounds;
       };
     };
   }
