@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
+/* 이 앱은 라이트 디자인 고정 — 기기 다크 모드에서 흰 카드 위 흰 글자가 되는 것 방지 */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -10,13 +12,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
