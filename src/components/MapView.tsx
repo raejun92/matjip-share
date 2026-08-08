@@ -37,6 +37,9 @@ export default function MapView({ user }: Props) {
   const [directCandidate, setDirectCandidate] = useState<NearbyCandidate | null>(null);
   // 연속 탭 시 이전 응답이 덮어쓰지 않게 시퀀스 가드
   const tapSeqRef = useRef(0);
+  // 내 위치 버튼 상태 (slice 8)
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
   // 최초 로드 결과 (fit bounds 기준 — 실시간 추가로는 화면을 안 움직임)
   const initialPlacesRef = useRef<Place[] | null>(null);
 
@@ -177,6 +180,28 @@ export default function MapView({ user }: Props) {
     }
   }, [map]);
 
+  // 내 위치로 이동 (slice 8) — GPS는 버튼을 눌렀을 때만 사용
+  function handleLocate() {
+    if (!navigator.geolocation) {
+      setLocateError("이 브라우저는 위치를 지원하지 않아요.");
+      return;
+    }
+    setLocating(true);
+    setLocateError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        panToCoords(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        setLocating(false);
+        setLocateError("위치를 가져오지 못했어요. 브라우저 위치 권한을 확인해 주세요.");
+        setTimeout(() => setLocateError(null), 4000);
+      },
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  }
+
   function handleAdded(place: Place) {
     setPlaces((prev) => [...prev, place]);
     setSheetOpen(false);
@@ -211,6 +236,28 @@ export default function MapView({ user }: Props) {
           className="absolute inset-x-0 top-16 z-10 mx-auto w-fit rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 shadow"
         >
           {loadError}
+        </p>
+      )}
+
+      {/* 내 위치 버튼 (slice 8) */}
+      {!sheetOpen && !nearbyOpen && (
+        <button
+          type="button"
+          onClick={handleLocate}
+          disabled={locating}
+          aria-label="내 위치로 이동"
+          className="absolute bottom-24 right-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl shadow-lg disabled:opacity-50"
+        >
+          {locating ? "…" : "⌖"}
+        </button>
+      )}
+
+      {locateError && (
+        <p
+          role="alert"
+          className="absolute inset-x-0 top-16 z-10 mx-auto w-fit rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 shadow"
+        >
+          {locateError}
         </p>
       )}
 

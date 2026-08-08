@@ -68,9 +68,10 @@ export default function AddPlaceSheet({ user, onPreview, onAdded, onClose }: Pro
   return (
     <div
       data-testid="add-place-sheet"
-      className="absolute inset-x-0 bottom-0 z-20 max-h-[70dvh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]"
+      className="absolute inset-x-0 bottom-0 z-20 flex max-h-[70dvh] flex-col rounded-t-2xl bg-white p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]"
     >
-      <div className="mb-3 flex items-center justify-between">
+      {/* 헤더/검색창 — 결과가 스크롤돼도 고정 (slice 8) */}
+      <div className="mb-3 flex shrink-0 items-center justify-between">
         <h2 className="text-lg font-bold">맛집 추가</h2>
         <button
           type="button"
@@ -82,7 +83,7 @@ export default function AddPlaceSheet({ user, onPreview, onAdded, onClose }: Pro
         </button>
       </div>
 
-      <form onSubmit={handleSearch} className="flex gap-2">
+      <form onSubmit={handleSearch} className="flex shrink-0 gap-2">
         <input
           type="text"
           value={query}
@@ -102,11 +103,12 @@ export default function AddPlaceSheet({ user, onPreview, onAdded, onClose }: Pro
       </form>
 
       {error && (
-        <p role="alert" className="mt-3 text-sm text-red-600">
+        <p role="alert" className="mt-3 shrink-0 text-sm text-red-600">
           {error}
         </p>
       )}
 
+      <div className="min-h-0 flex-1 overflow-y-auto">
       {!selected && candidates && (
         <ul className="mt-3 divide-y divide-gray-100">
           {candidates.length === 0 && (
@@ -164,6 +166,7 @@ export default function AddPlaceSheet({ user, onPreview, onAdded, onClose }: Pro
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -74,9 +74,10 @@ export default function NearbySheet({
   return (
     <div
       data-testid="nearby-sheet"
-      className="absolute inset-x-0 bottom-0 z-20 max-h-[70dvh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]"
+      className="absolute inset-x-0 bottom-0 z-20 flex max-h-[70dvh] flex-col rounded-t-2xl bg-white p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]"
     >
-      <div className="mb-3 flex items-center justify-between">
+      {/* 헤더 — 목록이 스크롤돼도 고정 (slice 8) */}
+      <div className="mb-3 flex shrink-0 items-center justify-between">
         <h2 className="text-lg font-bold">이 위치 주변 가게</h2>
         <button
           type="button"
@@ -89,15 +90,16 @@ export default function NearbySheet({
       </div>
 
       {pointAddress && (
-        <p className="mb-2 text-xs text-gray-400">{pointAddress} 근처</p>
+        <p className="mb-2 shrink-0 text-xs text-gray-400">{pointAddress} 근처</p>
       )}
 
       {error && (
-        <p role="alert" className="mb-2 text-sm text-red-600">
+        <p role="alert" className="mb-2 shrink-0 text-sm text-red-600">
           {error}
         </p>
       )}
 
+      <div className="min-h-0 flex-1 overflow-y-auto">
       {showList && (
         <>
           <ul className="divide-y divide-gray-100">
@@ -208,6 +210,7 @@ export default function NearbySheet({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
