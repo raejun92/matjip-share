@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import StarRatingInput from "./StarRatingInput";
+import { SheetDragHandle, useSheetDrag } from "./SheetDragHandle";
 import type { PlaceCandidate } from "@/lib/place-search";
 import { addPlace, type Place } from "@/lib/places";
 import { isValidRating } from "@/lib/rating";
@@ -65,11 +66,15 @@ export default function AddPlaceSheet({ user, onPreview, onAdded, onClose }: Pro
     }
   }
 
+  const { height, handleProps } = useSheetDrag(onClose);
+
   return (
     <div
       data-testid="add-place-sheet"
-      className="absolute inset-x-0 bottom-0 z-20 flex max-h-[70dvh] flex-col rounded-t-2xl bg-white p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]"
+      style={{ height }}
+      className="absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-2xl bg-white p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.15)]"
     >
+      <SheetDragHandle {...handleProps} />
       {/* 헤더/검색창 — 결과가 스크롤돼도 고정 (slice 8) */}
       <div className="mb-3 flex shrink-0 items-center justify-between">
         <h2 className="text-lg font-bold">맛집 추가</h2>
