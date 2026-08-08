@@ -7,7 +7,7 @@ import AddPlaceSheet from "./AddPlaceSheet";
 import NearbySheet from "./NearbySheet";
 import PlaceInfoCard from "./PlaceInfoCard";
 import { getPlaces, getPlaceById, type Place } from "@/lib/places";
-import { upsertPlace, removePlace } from "@/lib/place-list";
+import { upsertPlace, removePlace, uniqueAuthors } from "@/lib/place-list";
 import {
   pickDirectSuggestion,
   type NearbyCandidate,
@@ -42,6 +42,8 @@ export default function MapView({ user }: Props) {
   const [locateError, setLocateError] = useState<string | null>(null);
   // 최초 로드 결과 (fit bounds 기준 — 실시간 추가로는 화면을 안 움직임)
   const initialPlacesRef = useRef<Place[] | null>(null);
+  // 친구 필터 (slice 10): null = 전체 보기
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
 
   useEffect(() => {
     getPlaces()
@@ -164,6 +166,30 @@ export default function MapView({ user }: Props) {
     }
   }
 
+  /** 주어진 핀들이 모두 보이게 화면 맞춤 */
+  function fitTo(list: Place[]) {
+    if (!map || !window.kakao || list.length === 0) return;
+    const { maps } = window.kakao;
+    const bounds = new maps.LatLngBounds();
+    for (const place of list) {
+      bounds.extend(new maps.LatLng(place.lat, place.lng));
+    }
+    map.setBounds(bounds);
+  }
+
+  // 친구 필터 (slice 10)
+  const authors = uniqueAuthors(places);
+  const visiblePlaces = filterUserId
+    ? places.filter((p) => p.userId === filterUserId)
+    : places;
+
+  function toggleFilter(userId: string) {
+    const next = filterUserId === userId ? null : userId;
+    setFilterUserId(next);
+    setSelected(null);
+    fitTo(next ? places.filter((p) => p.userId === next) : places);
+  }
+
   function panTo(place: Place) {
     if (map && window.kakao) {
       panToCoords(place.lat, place.lng);
@@ -215,7 +241,7 @@ export default function MapView({ user }: Props) {
   return (
     <main className="relative h-dvh w-full">
       <KakaoMap onMapReady={handleMapReady} />
-      <PlacePins map={map} places={places} onSelect={handleSelect} />
+      <PlacePins map={map} places={visiblePlaces} onSelect={handleSelect} />
 
       {/* 내 배지 */}
       <div
@@ -230,10 +256,41 @@ export default function MapView({ user }: Props) {
         <span className="text-sm font-semibold">{user.name}</span>
       </div>
 
+      {/* 친구 필터 칩 (slice 10) */}
+      {authors.length > 0 && (
+        <div
+          data-testid="filter-chips"
+          className="absolute inset-x-3 top-14 z-10 flex gap-1.5 overflow-x-auto pb-1"
+        >
+          {authors.map((a) => {
+            const active = filterUserId === a.userId;
+            return (
+              <button
+                key={a.userId}
+                type="button"
+                onClick={() => toggleFilter(a.userId)}
+                aria-pressed={active}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full py-1 pl-1.5 pr-3 text-xs font-semibold shadow-md ${
+                  active
+                    ? "bg-gray-800 text-white"
+                    : "bg-white/95 text-gray-700"
+                }`}
+              >
+                <span
+                  className="inline-block h-3.5 w-3.5 rounded-full"
+                  style={{ backgroundColor: a.color }}
+                />
+                {a.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {loadError && (
         <p
           role="alert"
-          className="absolute inset-x-0 top-16 z-10 mx-auto w-fit rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 shadow"
+          className="absolute inset-x-0 top-24 z-10 mx-auto w-fit rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 shadow"
         >
           {loadError}
         </p>
