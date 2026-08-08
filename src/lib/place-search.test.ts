@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   mapKakaoDocuments,
   mergeNearby,
+  pickDirectSuggestion,
   type PlaceCandidate,
   type NearbyCandidate,
 } from "./place-search";
@@ -114,5 +115,40 @@ describe("mergeNearby", () => {
     const bad = { ...nearbyDoc("bad", "10"), x: "??" };
     const result = mergeNearby([[bad, nearbyDoc("ok", "20")]]);
     expect(result.map((r) => r.kakaoId)).toEqual(["ok"]);
+  });
+});
+
+// AC1(슬라이스 7): 가게 탭 판정 — 최근접이 임계값 이내면 바로 제안
+const candidate = (id: string, distanceM: number): NearbyCandidate => ({
+  kakaoId: id,
+  name: "가게" + id,
+  address: "",
+  category: "",
+  lat: 37.5,
+  lng: 127.0,
+  distanceM,
+});
+
+describe("pickDirectSuggestion", () => {
+  it("최근접 후보가 임계값 이내면 그 후보를 반환한다", () => {
+    const list = [candidate("a", 12), candidate("b", 80)];
+    expect(pickDirectSuggestion(list, 30)?.kakaoId).toBe("a");
+  });
+
+  it("경계값(정확히 임계값)도 포함한다", () => {
+    expect(pickDirectSuggestion([candidate("a", 30)], 30)?.kakaoId).toBe("a");
+  });
+
+  it("최근접이 임계값 밖이면 null", () => {
+    expect(pickDirectSuggestion([candidate("a", 31)], 30)).toBeNull();
+  });
+
+  it("빈 목록이면 null", () => {
+    expect(pickDirectSuggestion([], 30)).toBeNull();
+  });
+
+  it("목록이 거리순이 아니어도 최근접 기준으로 판정한다", () => {
+    const list = [candidate("far", 200), candidate("near", 10)];
+    expect(pickDirectSuggestion(list, 30)?.kakaoId).toBe("near");
   });
 });

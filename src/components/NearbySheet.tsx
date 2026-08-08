@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import StarRatingInput from "./StarRatingInput";
 import type { NearbyCandidate } from "@/lib/place-search";
 import { addPlace, type Place } from "@/lib/places";
@@ -9,46 +9,38 @@ import type { User } from "@/lib/users";
 
 type Props = {
   user: User;
-  /** 지도에서 탭한 지점 */
+  /** 지도에서 탭한 지점 (직접 입력 저장 좌표) */
   point: { lat: number; lng: number };
+  /** 부모(MapView)가 탭 시점에 미리 조회한 주변 데이터 */
+  candidates: NearbyCandidate[];
+  pointAddress: string;
+  /** 가게 라벨 탭으로 판정된 경우 별점 화면으로 바로 진입 (slice 7) */
+  initialSelected?: NearbyCandidate | null;
+  /** 후보 선택 시 지도 미리보기 이동 (slice 7) */
+  onPreview: (lat: number, lng: number) => void;
   onAdded: (place: Place) => void;
   onClose: () => void;
 };
 
-/** 탭한 지점 주변 가게 목록 → 선택 또는 직접 입력 → 별점 → 저장 (slice 6) */
-export default function NearbySheet({ user, point, onAdded, onClose }: Props) {
-  const [loading, setLoading] = useState(true);
-  const [candidates, setCandidates] = useState<NearbyCandidate[]>([]);
-  const [pointAddress, setPointAddress] = useState("");
-  const [selected, setSelected] = useState<NearbyCandidate | null>(null);
+/** 탭한 지점 주변 가게 목록 → 선택 또는 직접 입력 → 별점 → 저장 (slice 6·7) */
+export default function NearbySheet({
+  user,
+  point,
+  candidates,
+  pointAddress,
+  initialSelected = null,
+  onPreview,
+  onAdded,
+  onClose,
+}: Props) {
+  const [selected, setSelected] = useState<NearbyCandidate | null>(
+    initialSelected,
+  );
   const [manualMode, setManualMode] = useState(false);
   const [manualName, setManualName] = useState("");
   const [rating, setRating] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/nearby-places?lat=${point.lat}&lng=${point.lng}`)
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((data) => {
-        if (cancelled) return;
-        setCandidates(data.candidates);
-        setPointAddress(data.address ?? "");
-      })
-      .catch(() => {
-        if (!cancelled) setError("주변 검색에 실패했어요. 잠시 후 다시 시도해 주세요.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [point.lat, point.lng]);
 
   async function save(input: {
     name: string;
@@ -106,9 +98,7 @@ export default function NearbySheet({ user, point, onAdded, onClose }: Props) {
         </p>
       )}
 
-      {loading && <p className="py-6 text-center text-gray-400">주변을 찾는 중…</p>}
-
-      {showList && !loading && (
+      {showList && (
         <>
           <ul className="divide-y divide-gray-100">
             {candidates.length === 0 && (
@@ -120,7 +110,10 @@ export default function NearbySheet({ user, point, onAdded, onClose }: Props) {
               <li key={c.kakaoId}>
                 <button
                   type="button"
-                  onClick={() => setSelected(c)}
+                  onClick={() => {
+                    setSelected(c);
+                    onPreview(c.lat, c.lng);
+                  }}
                   className="w-full py-3 text-left hover:bg-gray-50"
                 >
                   <span className="font-semibold">{c.name}</span>

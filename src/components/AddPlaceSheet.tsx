@@ -9,12 +9,14 @@ import type { User } from "@/lib/users";
 
 type Props = {
   user: User;
+  /** 후보 선택 시 지도 미리보기 이동 (slice 7) */
+  onPreview?: (lat: number, lng: number) => void;
   onAdded: (place: Place) => void;
   onClose: () => void;
 };
 
 /** 맛집 추가 시트: 검색 → 선택 → 별점 → 저장 (PRD §6.4) */
-export default function AddPlaceSheet({ user, onAdded, onClose }: Props) {
+export default function AddPlaceSheet({ user, onPreview, onAdded, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [candidates, setCandidates] = useState<PlaceCandidate[] | null>(null);
@@ -114,7 +116,10 @@ export default function AddPlaceSheet({ user, onAdded, onClose }: Props) {
             <li key={c.kakaoId}>
               <button
                 type="button"
-                onClick={() => setSelected(c)}
+                onClick={() => {
+                  setSelected(c);
+                  onPreview?.(c.lat, c.lng);
+                }}
                 className="w-full py-3 text-left hover:bg-gray-50"
               >
                 <span className="font-semibold">{c.name}</span>

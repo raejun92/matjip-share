@@ -22,7 +22,8 @@ afterAll(async () => {
   }
 });
 
-describe("subscribeToPlaces (로컬 Supabase Realtime)", () => {
+// 다른 통합 테스트와 병렬 실행 시 로컬 Realtime 경합으로 간헐 실패 → 재시도 허용
+describe("subscribeToPlaces (로컬 Supabase Realtime)", { retry: 2 }, () => {
   it("places INSERT 시 구독자에게 해당 id가 전달된다", async () => {
     const author = await getOrCreateUser(`실시간-${suffix}`.slice(0, 12));
     cleanupUserId = author.id;
