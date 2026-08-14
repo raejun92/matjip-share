@@ -17,6 +17,8 @@
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon 키 (RLS로 보호되는 공개 키) |
 | `NEXT_PUBLIC_KAKAO_JS_KEY` | 지도 SDK (도메인 제한으로 보호) |
 | `KAKAO_REST_API_KEY` | 장소 검색 (서버 전용 — NEXT_PUBLIC 금지) |
+| `ADMIN_KEY` | /admin 관리 페이지 비밀 문구 (서버 전용) |
+| `SUPABASE_SERVICE_ROLE_KEY` | 관리자 삭제용 (서버 전용 — 대시보드 Settings→API에서 복사, 절대 노출 금지) |
 
 실제 값은 `.env.local`(커밋 안 됨)과 Vercel 대시보드에만 존재.
 
