@@ -18,8 +18,11 @@ test("내 위치 버튼을 누르면 지도가 현재 위치로 이동한다", a
   });
   await page.waitForTimeout(1000);
 
-  // 내 위치(모의: 부산)로 이동
+  // 내 위치(모의: 부산)로 이동 + 파란 점 표시 (slice 16)
   await page.getByRole("button", { name: "내 위치로 이동" }).click();
+  await expect(page.getByTestId("my-location")).toBeVisible({
+    timeout: 10_000,
+  });
   await page.waitForTimeout(1500); // pan 완료 대기
 
   // 이동 증거: 지도 중심을 탭 → 부산 콘텐츠가 떠야 함 (줌 레벨과 무관).
