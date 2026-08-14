@@ -12,6 +12,7 @@ import {
   pickDirectSuggestion,
   type NearbyCandidate,
 } from "@/lib/place-search";
+import { findNearestWithin, PIN_HIT_RADIUS_PX } from "@/lib/hit-test";
 import { subscribeToPlaces } from "@/lib/realtime";
 import type { User } from "@/lib/users";
 import type { KakaoMapInstance } from "@/types/kakao";
@@ -44,6 +45,8 @@ export default function MapView({ user }: Props) {
   const initialPlacesRef = useRef<Place[] | null>(null);
   // 친구 필터 (slice 10): null = 전체 보기
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
+  // 탭 핸들러(effect 클로저)에서 최신 표시 핀 목록 참조용 (slice 11)
+  const visiblePlacesRef = useRef<Place[]>([]);
 
   useEffect(() => {
     getPlaces()
@@ -106,6 +109,28 @@ export default function MapView({ user }: Props) {
     if (!map || !window.kakao) return;
     const { event } = window.kakao.maps;
     const handleClick = (e: { latLng: { getLat(): number; getLng(): number } }) => {
+      // 탭 지점이 화면상 핀 근처면 추가 흐름 대신 그 핀을 연다 (slice 11).
+      // 핀의 실질 탭 영역을 키워 "핀 클릭 = 생성"으로 오인되는 문제 해결.
+      const { maps } = window.kakao!;
+      const projection = map.getProjection();
+      const clickPt = projection.containerPointFromCoords(e.latLng);
+      const pinPoints = visiblePlacesRef.current.map((place) => {
+        const pt = projection.containerPointFromCoords(
+          new maps.LatLng(place.lat, place.lng),
+        );
+        // 핀 그림(높이 40, 앵커 하단)의 시각적 중심으로 보정
+        return { x: pt.x, y: pt.y - 20, place };
+      });
+      const hit = findNearestWithin(pinPoints, clickPt, PIN_HIT_RADIUS_PX);
+      if (hit) {
+        setSelected(hit.place);
+        setPickedPoint(null);
+        setNearbyOpen(false);
+        setDirectCandidate(null);
+        setSheetOpen(false);
+        return;
+      }
+
       const point = { lat: e.latLng.getLat(), lng: e.latLng.getLng() };
       const seq = ++tapSeqRef.current;
       setPickedPoint(point);
@@ -182,6 +207,7 @@ export default function MapView({ user }: Props) {
   const visiblePlaces = filterUserId
     ? places.filter((p) => p.userId === filterUserId)
     : places;
+  visiblePlacesRef.current = visiblePlaces;
 
   function toggleFilter(userId: string) {
     const next = filterUserId === userId ? null : userId;
