@@ -15,6 +15,19 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "맛집공유",
   description: "친구들끼리 지도에 맛집을 공유하는 앱",
+  // iOS 홈 화면 설치용 (사파리는 manifest 아이콘 대신 이걸 쓴다)
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true, // 설치 시 주소창 없는 전체 화면
+    title: "맛집공유",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport = {
+  themeColor: "#2563EB",
 };
 
 export default function RootLayout({
