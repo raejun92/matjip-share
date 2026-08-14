@@ -53,5 +53,15 @@ export default function Home() {
     );
   }
 
-  return <MapView user={user!} />;
+  return (
+    <MapView
+      user={user!}
+      onUserChange={setUser}
+      onSwitchUser={() => {
+        clearSessionUserId();
+        setUser(null);
+        setPhase("name-entry");
+      }}
+    />
+  );
 }

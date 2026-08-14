@@ -49,6 +49,26 @@ export async function getOrCreateUser(name: string): Promise<User> {
   return created;
 }
 
+/**
+ * 이름 바꾸기 (slice 15) — 핀·색상·id는 유지된다.
+ * 이미 있는 이름이면 거부 (이어쓰기 규칙과 혼동 방지).
+ */
+export async function renameUser(id: string, newName: string): Promise<User> {
+  const { data, error } = await supabase
+    .from("users")
+    .update({ name: newName })
+    .eq("id", id)
+    .select("id, name, color")
+    .single();
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("이미 사용 중인 이름이에요.");
+    }
+    throw new Error(`이름 변경 실패: ${error.message}`);
+  }
+  return data;
+}
+
 async function findUserByName(name: string): Promise<User | null> {
   const { data, error } = await supabase
     .from("users")

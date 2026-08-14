@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import { getOrCreateUser, getUserById } from "./users";
+import { getOrCreateUser, getUserById, renameUser } from "./users";
 import { PALETTE } from "./colors";
 
 // 로컬 Supabase 스택(supabase start) 대상 통합 테스트.
@@ -64,6 +64,40 @@ describe("getOrCreateUser (로컬 Supabase)", () => {
     if ((allRows?.length ?? 0) <= PALETTE.length) {
       expect(a.color).not.toBe(b.color);
     }
+  });
+});
+
+// AC1(슬라이스 15): 이름 바꾸기
+describe("renameUser (로컬 Supabase)", () => {
+  it("이름을 바꾸면 id·색상은 유지되고 이름만 바뀐다", async () => {
+    const before = testName("오타이름");
+    const after = testName("고친이름");
+    createdNames.push(before, after);
+
+    const user = await getOrCreateUser(before);
+    const renamed = await renameUser(user.id, after);
+
+    expect(renamed.id).toBe(user.id);
+    expect(renamed.color).toBe(user.color);
+    expect(renamed.name).toBe(after);
+  });
+
+  it("이미 있는 이름으로는 바꿀 수 없다", async () => {
+    const nameA = testName("주인장");
+    const nameB = testName("점유된");
+    createdNames.push(nameA, nameB);
+
+    const a = await getOrCreateUser(nameA);
+    await getOrCreateUser(nameB);
+
+    await expect(renameUser(a.id, nameB)).rejects.toThrow(/이미 사용 중/);
+  });
+
+  it("13자 이상 이름은 DB 제약으로 거부된다", async () => {
+    const name = testName("제약확인");
+    createdNames.push(name);
+    const user = await getOrCreateUser(name);
+    await expect(renameUser(user.id, "가".repeat(13))).rejects.toThrow();
   });
 });
 
