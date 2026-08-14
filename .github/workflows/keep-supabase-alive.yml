@@ -1,0 +1,21 @@
+# Supabase 무료 플랜은 ~1주간 요청이 없으면 자동 일시정지된다.
+# 매일 가벼운 조회 1회로 프로젝트를 깨어 있게 유지한다 (docs/DEPLOY.md 참고).
+name: Keep Supabase alive
+
+on:
+  schedule:
+    - cron: "23 21 * * *" # 매일 06:23 KST
+  workflow_dispatch: # 수동 실행으로 동작 확인 가능
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/users?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          echo "HTTP $status"
+          test "$status" = "200"
