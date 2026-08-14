@@ -6,6 +6,7 @@ import PlacePins from "./PlacePins";
 import AddPlaceSheet from "./AddPlaceSheet";
 import NearbySheet from "./NearbySheet";
 import PlaceInfoCard from "./PlaceInfoCard";
+import PlaceListSheet from "./PlaceListSheet";
 import { getPlaces, getPlaceById, type Place } from "@/lib/places";
 import { upsertPlace, removePlace, uniqueAuthors } from "@/lib/place-list";
 import {
@@ -41,6 +42,8 @@ export default function MapView({ user }: Props) {
   // 내 위치 버튼 상태 (slice 8)
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
+  // 맛집 목록 시트 (slice 13)
+  const [listOpen, setListOpen] = useState(false);
   // 최초 로드 결과 (fit bounds 기준 — 실시간 추가로는 화면을 안 움직임)
   const initialPlacesRef = useRef<Place[] | null>(null);
   // 친구 필터 (slice 10): null = 전체 보기
@@ -346,6 +349,33 @@ export default function MapView({ user }: Props) {
         >
           {loadError}
         </p>
+      )}
+
+      {/* 맛집 목록 버튼 (slice 13) */}
+      {!sheetOpen && !nearbyOpen && !listOpen && (
+        <button
+          type="button"
+          onClick={() => {
+            setSelected(null);
+            setPickedPoint(null);
+            setListOpen(true);
+          }}
+          className="absolute bottom-6 left-4 z-10 rounded-full bg-white px-4 py-3 text-sm font-bold text-gray-700 shadow-lg"
+        >
+          ☰ 목록
+        </button>
+      )}
+
+      {listOpen && (
+        <PlaceListSheet
+          places={visiblePlaces}
+          onPick={(place) => {
+            setListOpen(false);
+            setSelected(place);
+            panTo(place);
+          }}
+          onClose={() => setListOpen(false)}
+        />
       )}
 
       {/* 내 위치 버튼 (slice 8) */}

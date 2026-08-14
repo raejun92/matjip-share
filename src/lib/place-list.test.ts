@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { upsertPlace, removePlace, uniqueAuthors } from "./place-list";
+import {
+  upsertPlace,
+  removePlace,
+  uniqueAuthors,
+  sortPlaces,
+} from "./place-list";
 import type { Place } from "./places";
 
 const place = (id: string, name = "집", rating = 3): Place => ({
@@ -10,6 +15,7 @@ const place = (id: string, name = "집", rating = 3): Place => ({
   lat: 37.5,
   lng: 127.0,
   rating,
+  createdAt: "2026-08-01T00:00:00Z",
   author: { name: "친구", color: "#E6194B" },
 });
 
@@ -86,5 +92,41 @@ describe("uniqueAuthors", () => {
 
   it("빈 목록이면 빈 배열", () => {
     expect(uniqueAuthors([])).toEqual([]);
+  });
+});
+
+// AC1(슬라이스 13): 목록 정렬
+const placeAt = (id: string, createdAt: string, rating: number): Place => ({
+  ...place(id, "집" + id, rating),
+  createdAt,
+});
+
+describe("sortPlaces", () => {
+  const list = [
+    placeAt("old", "2026-08-01T00:00:00Z", 5),
+    placeAt("new", "2026-08-10T00:00:00Z", 3),
+    placeAt("mid", "2026-08-05T00:00:00Z", 5),
+  ];
+
+  it("최신순: createdAt 내림차순", () => {
+    expect(sortPlaces(list, "latest").map((p) => p.id)).toEqual([
+      "new",
+      "mid",
+      "old",
+    ]);
+  });
+
+  it("별점순: rating 내림차순, 동률은 최신 우선", () => {
+    expect(sortPlaces(list, "rating").map((p) => p.id)).toEqual([
+      "mid",
+      "old",
+      "new",
+    ]);
+  });
+
+  it("원본 배열을 변경하지 않는다", () => {
+    const copy = [...list];
+    sortPlaces(list, "latest");
+    expect(list).toEqual(copy);
   });
 });

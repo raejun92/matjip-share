@@ -9,6 +9,7 @@ export type Place = {
   lat: number;
   lng: number;
   rating: number;
+  createdAt: string;
   /** 작성자 (users join) — 핀 색상/정보 표시에 사용 */
   author: { name: string; color: string };
 };
@@ -30,10 +31,12 @@ type PlaceRow = {
   lat: number;
   lng: number;
   rating: number;
+  created_at: string;
   users: { name: string; color: string } | null;
 };
 
-const SELECT = "id, user_id, name, address, lat, lng, rating, users(name, color)";
+const SELECT =
+  "id, user_id, name, address, lat, lng, rating, created_at, users(name, color)";
 
 function toPlace(row: PlaceRow): Place {
   return {
@@ -44,6 +47,7 @@ function toPlace(row: PlaceRow): Place {
     lat: row.lat,
     lng: row.lng,
     rating: row.rating,
+    createdAt: row.created_at,
     author: row.users ?? { name: "?", color: "#888888" },
   };
 }
