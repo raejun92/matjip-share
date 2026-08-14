@@ -7,6 +7,7 @@ import AddPlaceSheet from "./AddPlaceSheet";
 import NearbySheet from "./NearbySheet";
 import PlaceInfoCard from "./PlaceInfoCard";
 import PlaceListSheet from "./PlaceListSheet";
+import BadgeMenu from "./BadgeMenu";
 import { getPlaces, getPlaceById, type Place } from "@/lib/places";
 import { upsertPlace, removePlace, uniqueAuthors } from "@/lib/place-list";
 import {
@@ -22,10 +23,14 @@ type NearbyData = { candidates: NearbyCandidate[]; address: string };
 
 type Props = {
   user: User;
+  /** 이름 변경 반영 (slice 15) */
+  onUserChange: (user: User) => void;
+  /** 세션 초기화 후 이름 입력 화면으로 (slice 15) */
+  onSwitchUser: () => void;
 };
 
 /** 지도 메인 화면: 카카오맵 + 색상 핀 + 내 배지 + 맛집 추가 (PRD §7) */
-export default function MapView({ user }: Props) {
+export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
   const [map, setMap] = useState<KakaoMapInstance | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -298,18 +303,18 @@ export default function MapView({ user }: Props) {
       <KakaoMap onMapReady={handleMapReady} />
       <PlacePins map={map} places={visiblePlaces} onSelect={handleSelect} />
 
-      {/* 내 배지 */}
-      <div
-        data-testid="my-badge"
-        className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-white/95 py-1.5 pl-2 pr-4 shadow-md"
-      >
-        <span
-          data-testid="my-color"
-          className="inline-block h-5 w-5 rounded-full"
-          style={{ backgroundColor: user.color }}
-        />
-        <span className="text-sm font-semibold">{user.name}</span>
-      </div>
+      {/* 내 배지 + 이름 관리 메뉴 (slice 15) */}
+      <BadgeMenu
+        user={user}
+        onRenamed={(renamed) => {
+          onUserChange(renamed);
+          // 내 핀들의 작성자 표시(이름)도 갱신
+          getPlaces()
+            .then(setPlaces)
+            .catch(() => {});
+        }}
+        onSwitchUser={onSwitchUser}
+      />
 
       {/* 친구 필터 칩 (slice 10) */}
       {authors.length > 0 && (
