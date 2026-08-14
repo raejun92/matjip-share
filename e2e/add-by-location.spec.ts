@@ -17,8 +17,29 @@ async function tapMapCenter(page: Page) {
   });
   const map = page.getByTestId("kakao-map");
   const box = (await map.boundingBox())!;
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-  await expect(page.getByTestId("picked-point")).toBeVisible();
+  // 병렬 테스트가 만든 핀이 탭 지점에 있으면 카드가 열린다(슬라이스 11) —
+  // 빈 지점이 나올 때까지 몇 군데 시도
+  const offsets: [number, number][] = [
+    [0, 0],
+    [120, -90],
+    [-120, 70],
+    [70, 150],
+    [-90, -150],
+  ];
+  for (const [dx, dy] of offsets) {
+    await page.mouse.click(
+      box.x + box.width / 2 + dx,
+      box.y + box.height / 2 + dy,
+    );
+    try {
+      await page.getByTestId("picked-point").waitFor({ timeout: 2_500 });
+      return;
+    } catch {
+      const close = page.getByRole("button", { name: "정보 닫기" });
+      if (await close.isVisible().catch(() => false)) await close.click();
+    }
+  }
+  throw new Error("빈 지점을 찾지 못했습니다 (핀이 너무 많음)");
 }
 
 /** popover에서 주변 목록 시트 열기 (직접 제안 여부와 무관하게 동작) */
