@@ -126,6 +126,30 @@ test("popover의 취소를 누르면 지점 선택이 사라진다", async ({ pa
   await expect(page.getByTestId("picked-point")).not.toBeVisible();
 });
 
+// popover가 하단 버튼을 가리지 않게: 지점 선택 중엔 목록/추가/내 위치 숨김
+test("지점 선택 중엔 하단 버튼들이 숨고, 해제하면 돌아온다", async ({
+  page,
+}) => {
+  const name = `숨김${Math.random().toString(36).slice(2, 7)}`;
+  await enterAs(page, name);
+
+  await expect(page.getByRole("button", { name: "☰ 목록" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "+ 맛집 추가" })).toBeVisible();
+
+  await tapMapCenter(page);
+  await expect(page.getByRole("button", { name: "☰ 목록" })).not.toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "+ 맛집 추가" }),
+  ).not.toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "내 위치로 이동" }),
+  ).not.toBeVisible();
+
+  await page.getByRole("button", { name: "지점 선택 취소" }).click();
+  await expect(page.getByRole("button", { name: "☰ 목록" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "+ 맛집 추가" })).toBeVisible();
+});
+
 // 슬라이스 12: 임시 마커 재탭 → 해제
 test("임시 마커를 다시 탭하면 마커가 사라진다", async ({ page }) => {
   const name = `재탭${Math.random().toString(36).slice(2, 7)}`;

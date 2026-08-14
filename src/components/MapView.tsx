@@ -356,8 +356,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
         </p>
       )}
 
-      {/* 맛집 목록 버튼 (slice 13) */}
-      {!sheetOpen && !nearbyOpen && !listOpen && (
+      {/* 맛집 목록 버튼 (slice 13) — 지점 선택 중엔 숨김 (popover와 겹침 방지) */}
+      {!sheetOpen && !nearbyOpen && !listOpen && !pickedPoint && (
         <button
           type="button"
           onClick={() => {
@@ -383,8 +383,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
         />
       )}
 
-      {/* 내 위치 버튼 (slice 8) */}
-      {!sheetOpen && !nearbyOpen && (
+      {/* 내 위치 버튼 (slice 8) — 지점 선택 중엔 숨김 */}
+      {!sheetOpen && !nearbyOpen && !pickedPoint && (
         <button
           type="button"
           onClick={handleLocate}
@@ -405,8 +405,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
         </p>
       )}
 
-      {/* 맛집 추가 버튼 */}
-      {!sheetOpen && (
+      {/* 맛집 추가 버튼 — 지점 선택 중엔 숨김 */}
+      {!sheetOpen && !pickedPoint && (
         <button
           type="button"
           onClick={() => {
@@ -429,9 +429,10 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
       )}
 
       {/* 탭 지점 popover (slice 6·7): 확인 중 → 가게 바로 추가 or 주변 찾기 */}
+      {/* 컨테이너는 전체 폭 — pointer-events-none으로 알약 밖 클릭을 삼키지 않게 한다 */}
       {pickedPoint && !nearbyOpen && !sheetOpen && (
-        <div className="absolute inset-x-4 bottom-6 z-10 flex justify-center">
-          <div className="flex max-w-full items-center gap-1 rounded-full bg-white py-1.5 pl-4 pr-1.5 shadow-lg">
+        <div className="pointer-events-none absolute inset-x-4 bottom-6 z-10 flex justify-center">
+          <div className="pointer-events-auto flex max-w-full items-center gap-1 rounded-full bg-white py-1.5 pl-4 pr-1.5 shadow-lg">
             {nearbyData === null ? (
               <span className="text-sm text-gray-400">주변 확인 중…</span>
             ) : directCandidate ? (
