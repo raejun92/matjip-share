@@ -4,6 +4,9 @@
 interface KakaoMapInstance {
   panTo(latlng: unknown): void;
   setBounds(bounds: unknown): void;
+  getProjection(): {
+    containerPointFromCoords(latlng: unknown): { x: number; y: number };
+  };
 }
 
 interface KakaoLatLngBounds {
@@ -32,6 +35,7 @@ declare global {
           position: unknown;
           content: HTMLElement;
           yAnchor?: number;
+          clickable?: boolean;
         }) => KakaoOverlay;
         LatLngBounds: new () => KakaoLatLngBounds;
         event: {

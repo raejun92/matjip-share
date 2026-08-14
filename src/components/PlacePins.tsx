@@ -45,6 +45,8 @@ export default function PlacePins({ map, places, onSelect }: Props) {
         position: new maps.LatLng(place.lat, place.lng),
         content,
         yAnchor: 1,
+        // 핀 탭 시 지도 click 이벤트 미발화 (터치에서 카드가 popover로 덮이는 것 방지)
+        clickable: true,
       });
       overlay.setMap(map);
       return overlay;

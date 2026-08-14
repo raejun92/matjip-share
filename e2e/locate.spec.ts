@@ -22,16 +22,22 @@ test("내 위치 버튼을 누르면 지도가 현재 위치로 이동한다", a
   await page.getByRole("button", { name: "내 위치로 이동" }).click();
   await page.waitForTimeout(1500); // pan 완료 대기
 
-  // 이동 증거: 지도 중심을 탭 → 주변 시트의 좌표→주소가 부산이어야 함
-  // (줌 레벨과 무관해 병렬 테스트 데이터에 영향받지 않는다)
+  // 이동 증거: 지도 중심을 탭 → 부산 콘텐츠가 떠야 함 (줌 레벨과 무관).
+  // 탭 지점 근처에 핀이 있으면(슬라이스 11) 핀 카드가, 없으면 주변 시트가 뜬다 — 둘 다 부산이면 성공.
   const map = page.getByTestId("kakao-map");
   const box = (await map.boundingBox())!;
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-  await expect(page.getByTestId("picked-point")).toBeVisible();
-  await page
-    .getByRole("button", { name: /주변 (더 보기|에서 찾기)/ })
-    .click({ timeout: 10_000 });
-  await expect(page.getByTestId("nearby-sheet")).toContainText("부산", {
-    timeout: 10_000,
-  });
+  const info = page.getByTestId("place-info");
+  const picked = page.getByTestId("picked-point");
+  await expect(info.or(picked).first()).toBeVisible({ timeout: 5_000 });
+  if (await picked.isVisible().catch(() => false)) {
+    await page
+      .getByRole("button", { name: /주변 (더 보기|에서 찾기)/ })
+      .click({ timeout: 10_000 });
+    await expect(page.getByTestId("nearby-sheet")).toContainText("부산", {
+      timeout: 10_000,
+    });
+  } else {
+    await expect(info).toContainText("부산");
+  }
 });
