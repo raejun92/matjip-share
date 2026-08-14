@@ -44,9 +44,10 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
   const [directCandidate, setDirectCandidate] = useState<NearbyCandidate | null>(null);
   // 연속 탭 시 이전 응답이 덮어쓰지 않게 시퀀스 가드
   const tapSeqRef = useRef(0);
-  // 내 위치 버튼 상태 (slice 8)
+  // 내 위치 버튼 상태 (slice 8) + 파란 점 표시 (slice 16)
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
   // 맛집 목록 시트 (slice 13)
   const [listOpen, setListOpen] = useState(false);
   // 최초 로드 결과 (fit bounds 기준 — 실시간 추가로는 화면을 안 움직임)
@@ -215,6 +216,42 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     };
   }, [map, pickedPoint]);
 
+  // 내 위치 파란 점 (slice 16) — 장소 핀이 아니므로 탭 판정 대상 아님
+  const myLocationOverlayRef = useRef<{ setMap(m: unknown | null): void } | null>(null);
+  useEffect(() => {
+    myLocationOverlayRef.current?.setMap(null);
+    myLocationOverlayRef.current = null;
+    if (!map || !window.kakao || !myLocation) return;
+    const { maps } = window.kakao;
+    const content = document.createElement("div");
+    content.dataset.testid = "my-location";
+    content.style.cssText = "pointer-events:none;line-height:0;";
+    content.innerHTML = `
+<style>
+@keyframes my-loc-pulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  70% { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+</style>
+<div style="position:relative;width:18px;height:18px;">
+  <div style="position:absolute;inset:0;border-radius:9999px;background:#3B82F6;
+              animation:my-loc-pulse 2s ease-out infinite;"></div>
+  <div style="position:absolute;inset:0;border-radius:9999px;background:#3B82F6;
+              border:3px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>
+</div>`;
+    const overlay = new maps.CustomOverlay({
+      position: new maps.LatLng(myLocation.lat, myLocation.lng),
+      content,
+      yAnchor: 0.5,
+    });
+    overlay.setMap(map);
+    myLocationOverlayRef.current = overlay;
+    return () => {
+      overlay.setMap(null);
+    };
+  }, [map, myLocation]);
+
   // 지도 로드 전에 저장이 끝나면 이동이 유실된다 (느린 회선에서 재현) — 준비되면 실행
   const pendingPanRef = useRef<Place | null>(null);
 
@@ -277,6 +314,7 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
+        setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         panToCoords(pos.coords.latitude, pos.coords.longitude);
       },
       () => {
