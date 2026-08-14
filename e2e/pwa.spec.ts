@@ -24,6 +24,25 @@ test("아이콘 파일들이 서빙된다", async ({ request }) => {
   }
 });
 
+// 슬라이스 17: 링크 미리보기(OG 카드)
+test("head에 OG 태그가 있고 카드 이미지가 서빙된다", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    "content",
+    /맛집공유/,
+  );
+  const ogImage = await page
+    .locator('meta[property="og:image"]')
+    .getAttribute("content");
+  expect(ogImage).toContain("opengraph-image");
+  const res = await request.get(ogImage!);
+  expect(res.ok()).toBe(true);
+  expect(res.headers()["content-type"]).toContain("image/png");
+});
+
 test("페이지 head에 manifest 링크와 iOS 메타가 있다", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
