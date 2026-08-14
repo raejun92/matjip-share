@@ -125,3 +125,26 @@ test("popover의 취소를 누르면 지점 선택이 사라진다", async ({ pa
   await page.getByRole("button", { name: "지점 선택 취소" }).click();
   await expect(page.getByTestId("picked-point")).not.toBeVisible();
 });
+
+// 슬라이스 12: 임시 마커 재탭 → 해제
+test("임시 마커를 다시 탭하면 마커가 사라진다", async ({ page }) => {
+  const name = `재탭${Math.random().toString(36).slice(2, 7)}`;
+  await enterAs(page, name);
+
+  await tapMapCenter(page);
+  const marker = page.getByTestId("picked-point");
+  await expect(marker).toBeVisible();
+
+  // 마커 위치를 다시 탭 (마커는 pointer-events:none → 지도 탭으로 전달됨)
+  const box = (await marker.boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(marker).not.toBeVisible();
+  // popover도 사라짐 (취소 버튼 없음)
+  await expect(
+    page.getByRole("button", { name: "지점 선택 취소" }),
+  ).not.toBeVisible();
+
+  // 다시 탭하면 새 지점 선택이 정상 동작 (토글 복귀)
+  await tapMapCenter(page);
+  await expect(page.getByTestId("picked-point")).toBeVisible();
+});

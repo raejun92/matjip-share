@@ -47,6 +47,8 @@ export default function MapView({ user }: Props) {
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
   // 탭 핸들러(effect 클로저)에서 최신 표시 핀 목록 참조용 (slice 11)
   const visiblePlacesRef = useRef<Place[]>([]);
+  // 탭 핸들러에서 최신 임시 마커 위치 참조용 (slice 12)
+  const pickedPointRef = useRef<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     getPlaces()
@@ -114,6 +116,29 @@ export default function MapView({ user }: Props) {
       const { maps } = window.kakao!;
       const projection = map.getProjection();
       const clickPt = projection.containerPointFromCoords(e.latLng);
+
+      // 임시(회색) 마커 근처 재탭 → 마커 해제 (slice 12, 최우선 분기)
+      const picked = pickedPointRef.current;
+      if (picked) {
+        const pickedPt = projection.containerPointFromCoords(
+          new maps.LatLng(picked.lat, picked.lng),
+        );
+        // 마커 그림(높이 35, 앵커 하단)의 시각적 중심으로 보정
+        const markerHit = findNearestWithin(
+          [{ x: pickedPt.x, y: pickedPt.y - 17 }],
+          clickPt,
+          PIN_HIT_RADIUS_PX,
+        );
+        if (markerHit) {
+          tapSeqRef.current++; // 진행 중인 주변 조회 응답 무시
+          setPickedPoint(null);
+          setNearbyData(null);
+          setDirectCandidate(null);
+          setNearbyOpen(false);
+          return;
+        }
+      }
+
       const pinPoints = visiblePlacesRef.current.map((place) => {
         const pt = projection.containerPointFromCoords(
           new maps.LatLng(place.lat, place.lng),
@@ -208,6 +233,7 @@ export default function MapView({ user }: Props) {
     ? places.filter((p) => p.userId === filterUserId)
     : places;
   visiblePlacesRef.current = visiblePlaces;
+  pickedPointRef.current = pickedPoint;
 
   function toggleFilter(userId: string) {
     const next = filterUserId === userId ? null : userId;
