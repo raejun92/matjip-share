@@ -17,6 +17,19 @@ export function removePlace(list: Place[], id: string): Place[] {
   return list.filter((p) => p.id !== id);
 }
 
+export type PlaceSort = "latest" | "rating";
+
+/** 목록 정렬 (slice 13): 최신순 또는 별점순(동률은 최신 우선) */
+export function sortPlaces(list: Place[], sort: PlaceSort): Place[] {
+  const byLatest = (a: Place, b: Place) =>
+    b.createdAt.localeCompare(a.createdAt);
+  return [...list].sort(
+    sort === "latest"
+      ? byLatest
+      : (a, b) => b.rating - a.rating || byLatest(a, b),
+  );
+}
+
 export type Author = { userId: string; name: string; color: string };
 
 /** 핀 목록에서 중복 없는 작성자 목록 (첫 등장 순) — 친구 필터 칩용 (slice 10) */
