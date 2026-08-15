@@ -22,6 +22,7 @@ import {
 } from "@/lib/place-search";
 import { findNearestWithin, PIN_HIT_RADIUS_PX } from "@/lib/hit-test";
 import { subscribeToPlaces } from "@/lib/realtime";
+import { notifyNewPlace } from "@/lib/push";
 import type { User } from "@/lib/users";
 import { PIN_LABEL_MAX_LEVEL, DEFAULT_LEVEL } from "@/lib/kakao";
 import type { KakaoMapInstance } from "@/types/kakao";
@@ -409,6 +410,7 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     setPreviewPoint(null);
     setSelected(place);
     panTo(place);
+    notifyNewPlace(place.id); // 구독자들에게 푸시 (실패 무해)
   }
 
   return (
@@ -677,6 +679,7 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
           onAdded={(added) => {
             setPlaces((prev) => [...prev, added]);
             setSelected(added);
+            notifyNewPlace(added.id);
           }}
         />
       )}

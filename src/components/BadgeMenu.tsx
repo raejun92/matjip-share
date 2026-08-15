@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { normalizeName, MAX_NAME_LENGTH } from "@/lib/username";
 import { renameUser, type User } from "@/lib/users";
+import {
+  getPushState,
+  subscribePush,
+  unsubscribePush,
+  type PushState,
+} from "@/lib/push";
 
 type Props = {
   user: User;
@@ -17,6 +23,27 @@ export default function BadgeMenu({ user, onRenamed, onSwitchUser }: Props) {
   const [value, setValue] = useState(user.name);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pushState, setPushState] = useState<PushState>("unsupported");
+
+  async function handlePushToggle() {
+    setBusy(true);
+    setError(null);
+    try {
+      if (pushState === "subscribed") {
+        setPushState(await unsubscribePush());
+      } else {
+        const next = await subscribePush(user.id);
+        setPushState(next);
+        if (next === "denied") {
+          setError("알림 권한이 거부돼 있어요. 브라우저 설정에서 허용해 주세요.");
+        }
+      }
+    } catch {
+      setError("알림 설정에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleRename(e: React.FormEvent) {
     e.preventDefault();
@@ -55,6 +82,7 @@ export default function BadgeMenu({ user, onRenamed, onSwitchUser }: Props) {
           setRenaming(false);
           setValue(user.name);
           setError(null);
+          void getPushState().then(setPushState);
         }}
         className="flex items-center gap-2 rounded-full bg-white/95 py-1.5 pl-2 pr-4 shadow-md"
       >
@@ -87,6 +115,21 @@ export default function BadgeMenu({ user, onRenamed, onSwitchUser }: Props) {
               >
                 🔄 다른 이름으로 접속
               </button>
+              {pushState !== "unsupported" && (
+                <button
+                  type="button"
+                  onClick={handlePushToggle}
+                  disabled={busy}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {pushState === "subscribed" ? "🔕 알림 끄기" : "🔔 알림 켜기"}
+                </button>
+              )}
+              {error && (
+                <p role="alert" className="px-3 py-1 text-xs text-red-600">
+                  {error}
+                </p>
+              )}
             </>
           ) : (
             <form onSubmit={handleRename} className="space-y-2 p-1">
