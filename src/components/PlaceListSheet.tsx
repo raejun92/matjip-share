@@ -84,6 +84,11 @@ export default function PlaceListSheet({ places, onPick, onClose }: Props) {
                   <span className="block truncate text-xs text-gray-400">
                     {p.address}
                   </span>
+                  {p.comment && (
+                    <span className="block truncate text-xs text-gray-600">
+                      💬 {p.comment}
+                    </span>
+                  )}
                 </span>
                 <span className="shrink-0 text-sm text-yellow-500">
                   {"★".repeat(p.rating)}

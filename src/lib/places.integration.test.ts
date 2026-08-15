@@ -4,7 +4,7 @@ import { getOrCreateUser, type User } from "./users";
 import {
   addPlace,
   getPlaces,
-  updatePlaceRating,
+  updatePlaceDetails,
   deletePlace,
   getPlaceById,
 } from "./places";
@@ -82,7 +82,7 @@ describe("addPlace / getPlaces (로컬 Supabase)", () => {
 
 // AC2(슬라이스 5): 수정/삭제가 DB에 반영된다
 describe("updatePlaceRating / deletePlace (로컬 Supabase)", () => {
-  it("별점을 수정하면 반영된 핀을 반환한다", async () => {
+  it("별점·한줄평을 수정하면 반영된 핀을 반환한다", async () => {
     const place = await addPlace({
       userId: author.id,
       name: "별점 바꿀 집",
@@ -91,17 +91,37 @@ describe("updatePlaceRating / deletePlace (로컬 Supabase)", () => {
       lng: 127.0,
       rating: 2,
     });
+    expect(place.comment).toBe("");
 
-    const updated = await updatePlaceRating(place.id, 5);
+    const updated = await updatePlaceDetails(place.id, {
+      rating: 5,
+      comment: "  콩국수 미쳤음  ",
+    });
     expect(updated.rating).toBe(5);
+    expect(updated.comment).toBe("콩국수 미쳤음"); // trim 확인
     expect(updated.id).toBe(place.id);
     expect(updated.author.name).toBe(author.name);
   });
 
+  it("한줄평 포함 저장이 반영된다 (AC1)", async () => {
+    const place = await addPlace({
+      userId: author.id,
+      name: "한줄평 집",
+      address: "",
+      lat: 37.5,
+      lng: 127.0,
+      rating: 4,
+      comment: "웨이팅 김. 오픈런 추천",
+    });
+    expect(place.comment).toBe("웨이팅 김. 오픈런 추천");
+    const fetched = await getPlaceById(place.id);
+    expect(fetched?.comment).toBe("웨이팅 김. 오픈런 추천");
+  });
+
   it("범위 밖 별점 수정은 거부된다", async () => {
-    await expect(updatePlaceRating(crypto.randomUUID(), 0)).rejects.toThrow(
-      /별점/,
-    );
+    await expect(
+      updatePlaceDetails(crypto.randomUUID(), { rating: 0, comment: "" }),
+    ).rejects.toThrow(/별점/);
   });
 
   it("핀을 삭제하면 조회되지 않는다", async () => {

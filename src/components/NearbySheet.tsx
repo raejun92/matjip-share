@@ -40,6 +40,7 @@ export default function NearbySheet({
   const [manualMode, setManualMode] = useState(false);
   const [manualName, setManualName] = useState("");
   const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +54,7 @@ export default function NearbySheet({
     setSaving(true);
     setError(null);
     try {
-      const place = await addPlace({ userId: user.id, rating, ...input });
+      const place = await addPlace({ userId: user.id, rating, comment, ...input });
       onAdded(place);
     } catch {
       setError("저장에 실패했어요. 잠시 후 다시 시도해 주세요.");
@@ -149,12 +150,22 @@ export default function NearbySheet({
             <p className="text-sm text-gray-500">{selected.address}</p>
           </div>
           <StarRatingInput value={rating} onChange={setRating} />
+          <input
+            type="text"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="한줄평 (선택)"
+            aria-label="한줄평"
+            maxLength={200}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => {
                 setSelected(null);
                 setRating(0);
+                setComment("");
               }}
               className="flex-1 rounded-lg border border-gray-300 py-2.5 font-semibold text-gray-600"
             >
@@ -192,12 +203,22 @@ export default function NearbySheet({
             className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
           />
           <StarRatingInput value={rating} onChange={setRating} />
+          <input
+            type="text"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="한줄평 (선택)"
+            aria-label="한줄평"
+            maxLength={200}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => {
                 setManualMode(false);
                 setRating(0);
+                setComment("");
               }}
               className="flex-1 rounded-lg border border-gray-300 py-2.5 font-semibold text-gray-600"
             >

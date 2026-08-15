@@ -45,7 +45,7 @@ async function tapMapCenter(page: Page) {
 /** popover에서 주변 목록 시트 열기 (직접 제안 여부와 무관하게 동작) */
 async function openNearbyList(page: Page) {
   await page
-    .getByRole("button", { name: /주변 (더 보기|에서 찾기)/ })
+    .getByRole("button", { name: /(주변 더 보기|주변에서 찾기)/ })
     .click({ timeout: 10_000 });
   await expect(page.getByTestId("nearby-sheet")).toBeVisible();
 }
@@ -85,7 +85,7 @@ test("가게 근접 탭이면 바로 추가 제안으로 저장할 수 있다 (�
   await tapMapCenter(page);
   // 지도 중심이 가게 30m 내면 직접 제안, 아니면 목록으로 — 둘 다 저장까지 완주
   const directBtn = page.getByRole("button", { name: /추가하기$/ });
-  const listBtn = page.getByRole("button", { name: /주변 (더 보기|에서 찾기)/ });
+  const listBtn = page.getByRole("button", { name: /(주변 더 보기|주변에서 찾기)/ });
   await expect(directBtn.or(listBtn).first()).toBeVisible({ timeout: 10_000 });
 
   let placeName: string;

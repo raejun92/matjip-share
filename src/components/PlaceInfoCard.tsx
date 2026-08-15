@@ -3,7 +3,7 @@
 import { useState } from "react";
 import StarRatingInput from "./StarRatingInput";
 import {
-  updatePlaceRating,
+  updatePlaceDetails,
   deletePlace,
   type Place,
 } from "@/lib/places";
@@ -29,6 +29,7 @@ export default function PlaceInfoCard({
 }: Props) {
   const [mode, setMode] = useState<Mode>("view");
   const [rating, setRating] = useState(place.rating);
+  const [comment, setComment] = useState(place.comment);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +38,7 @@ export default function PlaceInfoCard({
     setBusy(true);
     setError(null);
     try {
-      const updated = await updatePlaceRating(place.id, rating);
+      const updated = await updatePlaceDetails(place.id, { rating, comment });
       onUpdated(updated);
       setMode("view");
     } catch {
@@ -101,6 +102,25 @@ export default function PlaceInfoCard({
       {place.address && (
         <p className="mt-1 text-sm text-gray-500">{place.address}</p>
       )}
+      {mode !== "edit" && place.comment && (
+        <p
+          data-testid="place-comment"
+          className="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700"
+        >
+          💬 {place.comment}
+        </p>
+      )}
+      {mode === "edit" && (
+        <input
+          type="text"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="한줄평 (선택)"
+          aria-label="한줄평 수정"
+          maxLength={200}
+          className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        />
+      )}
       <p className="mt-2 flex items-center gap-1.5 text-sm text-gray-600">
         <span
           className="inline-block h-3.5 w-3.5 rounded-full"
@@ -121,11 +141,12 @@ export default function PlaceInfoCard({
             type="button"
             onClick={() => {
               setRating(place.rating);
+              setComment(place.comment);
               setMode("edit");
             }}
             className="flex-1 rounded-lg border border-gray-300 py-2 text-sm font-semibold text-gray-600"
           >
-            별점 수정
+            수정
           </button>
           <button
             type="button"
