@@ -17,6 +17,7 @@ import {
 import { findNearestWithin, PIN_HIT_RADIUS_PX } from "@/lib/hit-test";
 import { subscribeToPlaces } from "@/lib/realtime";
 import type { User } from "@/lib/users";
+import { PIN_LABEL_MAX_LEVEL, DEFAULT_LEVEL } from "@/lib/kakao";
 import type { KakaoMapInstance } from "@/types/kakao";
 
 type NearbyData = { candidates: NearbyCandidate[]; address: string };
@@ -52,6 +53,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
   // 맛집 목록 시트 (slice 13)
   const [listOpen, setListOpen] = useState(false);
+  // 줌 레벨 추적 — 핀 이름 라벨 표시 판단 (slice 21)
+  const [zoomLevel, setZoomLevel] = useState(DEFAULT_LEVEL);
   // 최초 로드 결과 (fit bounds 기준 — 실시간 추가로는 화면을 안 움직임)
   const initialPlacesRef = useRef<Place[] | null>(null);
   // 친구 필터 (slice 10): null = 전체 보기
@@ -191,6 +194,16 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     };
     event.addListener(map, "click", handleClick);
     return () => event.removeListener(map, "click", handleClick);
+  }, [map]);
+
+  // 줌 레벨 추적 (slice 21)
+  useEffect(() => {
+    if (!map || !window.kakao) return;
+    const { event } = window.kakao.maps;
+    const handleZoom = () => setZoomLevel(map.getLevel());
+    handleZoom(); // fit bounds 등으로 이미 바뀐 레벨 반영
+    event.addListener(map, "zoom_changed", handleZoom);
+    return () => event.removeListener(map, "zoom_changed", handleZoom);
   }, [map]);
 
   // 탭 지점 임시 마커 (회색)
@@ -345,7 +358,12 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
   return (
     <main className="relative h-dvh w-full">
       <KakaoMap onMapReady={handleMapReady} />
-      <PlacePins map={map} places={visiblePlaces} onSelect={handleSelect} />
+      <PlacePins
+        map={map}
+        places={visiblePlaces}
+        showLabels={zoomLevel <= PIN_LABEL_MAX_LEVEL}
+        onSelect={handleSelect}
+      />
 
       {/* 내 배지 + 이름 관리 메뉴 (slice 15) */}
       <BadgeMenu

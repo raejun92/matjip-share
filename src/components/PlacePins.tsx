@@ -7,8 +7,18 @@ import type { KakaoOverlay } from "@/types/kakao";
 type Props = {
   map: unknown | null;
   places: Place[];
+  /** 가게 이름 칩 표시 여부 (광역 줌에선 겹침 방지로 숨김 — slice 21) */
+  showLabels: boolean;
   onSelect: (place: Place) => void;
 };
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 /** 작성자 색으로 칠한 물방울 핀 SVG */
 function pinSvg(color: string): string {
@@ -21,7 +31,7 @@ function pinSvg(color: string): string {
 }
 
 /** places를 카카오맵 CustomOverlay로 그린다 (지도 경계 — React 밖 명령형 관리) */
-export default function PlacePins({ map, places, onSelect }: Props) {
+export default function PlacePins({ map, places, showLabels, onSelect }: Props) {
   const overlaysRef = useRef<KakaoOverlay[]>([]);
 
   useEffect(() => {
@@ -37,8 +47,14 @@ export default function PlacePins({ map, places, onSelect }: Props) {
       content.dataset.placeName = place.name;
       content.title = `${place.name} (${place.author.name})`;
       content.style.cssText =
-        "background:none;border:none;padding:0;cursor:pointer;line-height:0;";
-      content.innerHTML = pinSvg(place.author.color);
+        "background:none;border:none;padding:0;cursor:pointer;line-height:0;display:flex;flex-direction:column;align-items:center;";
+      const label = showLabels
+        ? `<span style="max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+             background:rgba(255,255,255,0.95);border-radius:9999px;padding:2px 8px;margin-bottom:2px;
+             font-size:11px;font-weight:700;color:#1f2937;line-height:1.3;
+             box-shadow:0 1px 4px rgba(0,0,0,0.25);">${escapeHtml(place.name)}</span>`
+        : "";
+      content.innerHTML = label + pinSvg(place.author.color);
       content.addEventListener("click", () => onSelect(place));
 
       const overlay = new maps.CustomOverlay({
@@ -57,7 +73,7 @@ export default function PlacePins({ map, places, onSelect }: Props) {
       overlaysRef.current.forEach((o) => o.setMap(null));
       overlaysRef.current = [];
     };
-  }, [map, places, onSelect]);
+  }, [map, places, showLabels, onSelect]);
 
   return null;
 }

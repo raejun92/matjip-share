@@ -44,6 +44,9 @@ test("맛집을 검색해 별점과 함께 저장하면 내 색 핀이 생긴다
     `[data-testid="place-pin"][title="${placeName} (${name})"]`,
   );
   await expect(myPin.first()).toBeVisible({ timeout: 10_000 });
+
+  // 슬라이스 21: 기본 줌에선 핀 위에 가게 이름 라벨 표시
+  await expect(myPin.first().getByText(placeName!)).toBeVisible();
   const pinFill = await myPin
     .first()
     .locator("path")

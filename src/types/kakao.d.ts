@@ -4,6 +4,7 @@
 interface KakaoMapInstance {
   panTo(latlng: unknown): void;
   setBounds(bounds: unknown): void;
+  getLevel(): number;
   getProjection(): {
     containerPointFromCoords(latlng: unknown): { x: number; y: number };
   };
