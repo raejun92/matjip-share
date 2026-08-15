@@ -19,3 +19,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* iOS 사파리는 입력창 글자가 16px 미만이면 포커스 시 화면을 강제 확대한다.
+   모든 입력을 16px 이상으로 고정해 자동 확대(+옆으로 밀림)를 방지. */
+input,
+textarea,
+select {
+  font-size: max(16px, 1em);
+}
