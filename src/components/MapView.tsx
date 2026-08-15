@@ -61,6 +61,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
   const [listOpen, setListOpen] = useState(false);
   // 줌 레벨 추적 — 핀 이름 라벨 표시 판단 (slice 21)
   const [zoomLevel, setZoomLevel] = useState(DEFAULT_LEVEL);
+  // 검색/주변에서 가게 선택 시 위치 미리보기 마커 (slice 23)
+  const [previewPoint, setPreviewPoint] = useState<{ lat: number; lng: number } | null>(null);
   // 최초 로드 결과 (fit bounds 기준 — 실시간 추가로는 화면을 안 움직임)
   const initialPlacesRef = useRef<Place[] | null>(null);
   // 친구 필터 (slice 10): null = 전체 보기
@@ -195,6 +197,7 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
       setNearbyOpen(false);
       setSelected(null);
       setSheetOpen(false);
+      setPreviewPoint(null);
 
       fetch(`/api/nearby-places?lat=${point.lat}&lng=${point.lng}`)
         .then((res) => (res.ok ? res.json() : { candidates: [], address: "" }))
@@ -284,6 +287,35 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     };
   }, [map, myLocation]);
 
+  // 선택한 가게 위치 미리보기 마커 (slice 23) — 파란 물방울
+  const previewOverlayRef = useRef<{ setMap(m: unknown | null): void } | null>(null);
+  useEffect(() => {
+    previewOverlayRef.current?.setMap(null);
+    previewOverlayRef.current = null;
+    if (!map || !window.kakao || !previewPoint) return;
+    const { maps } = window.kakao;
+    const content = document.createElement("div");
+    content.dataset.testid = "preview-point";
+    content.style.cssText = "line-height:0;pointer-events:none;";
+    content.innerHTML = `
+<svg width="30" height="38" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
+  <path d="M16 0C7.2 0 0 7.2 0 16c0 10.7 13.1 22.2 14.6 23.4a2.2 2.2 0 0 0 2.8 0C18.9 38.2 32 26.7 32 16 32 7.2 24.8 0 16 0z"
+        fill="#2563EB" stroke="white" stroke-width="2"/>
+  <circle cx="16" cy="15" r="6" fill="white"/>
+  <circle cx="16" cy="15" r="3" fill="#2563EB"/>
+</svg>`;
+    const overlay = new maps.CustomOverlay({
+      position: new maps.LatLng(previewPoint.lat, previewPoint.lng),
+      content,
+      yAnchor: 1,
+    });
+    overlay.setMap(map);
+    previewOverlayRef.current = overlay;
+    return () => {
+      overlay.setMap(null);
+    };
+  }, [map, previewPoint]);
+
   // 지도 로드 전에 저장이 끝나면 이동이 유실된다 (느린 회선에서 재현) — 준비되면 실행
   const pendingPanRef = useRef<Place | null>(null);
 
@@ -291,6 +323,12 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     if (map && window.kakao) {
       map.panTo(new window.kakao.maps.LatLng(lat, lng));
     }
+  }
+
+  /** 시트에서 가게 선택 시: 지도 이동 + 미리보기 마커 (slice 23) */
+  function handlePreview(lat: number, lng: number) {
+    panToCoords(lat, lng);
+    setPreviewPoint({ lat, lng });
   }
 
   /** 주어진 핀들이 모두 보이게 화면 맞춤 */
@@ -367,6 +405,7 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     setPickedPoint(null);
     setDirectCandidates([]);
     setChosenCandidate(null);
+    setPreviewPoint(null);
     setSelected(place);
     panTo(place);
   }
@@ -500,9 +539,12 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
       {sheetOpen && (
         <AddPlaceSheet
           user={user}
-          onPreview={panToCoords}
+          onPreview={handlePreview}
           onAdded={handleAdded}
-          onClose={() => setSheetOpen(false)}
+          onClose={() => {
+            setSheetOpen(false);
+            setPreviewPoint(null);
+          }}
         />
       )}
 
@@ -598,13 +640,14 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
           candidates={nearbyData.candidates}
           pointAddress={nearbyData.address}
           initialSelected={chosenCandidate}
-          onPreview={panToCoords}
+          onPreview={handlePreview}
           onAdded={handleAdded}
           onClose={() => {
             setNearbyOpen(false);
             setPickedPoint(null);
             setDirectCandidates([]);
             setChosenCandidate(null);
+            setPreviewPoint(null);
           }}
         />
       )}
