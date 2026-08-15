@@ -15,6 +15,7 @@ const place = (id: string, name = "집", rating = 3): Place => ({
   lat: 37.5,
   lng: 127.0,
   rating,
+  comment: "",
   createdAt: "2026-08-01T00:00:00Z",
   author: { name: "친구", color: "#E6194B" },
 });

@@ -29,11 +29,11 @@ test("내 핀은 별점을 수정할 수 있고, 수정 결과가 반영된다",
 
   // AC4: 내 핀 카드엔 수정/삭제 버튼이 있다
   const info = page.getByTestId("place-info");
-  await expect(info.getByRole("button", { name: "별점 수정" })).toBeVisible();
+  await expect(info.getByRole("button", { name: "수정", exact: true })).toBeVisible();
   await expect(info.getByRole("button", { name: "삭제", exact: true })).toBeVisible();
 
   // AC5: 별점 2 → 5 수정
-  await info.getByRole("button", { name: "별점 수정" }).click();
+  await info.getByRole("button", { name: "수정", exact: true }).click();
   await info.getByRole("button", { name: "별점 5점으로 변경" }).click();
   await info.getByRole("button", { name: "저장", exact: true }).click();
   await expect(info).toContainText("5점");
@@ -84,7 +84,7 @@ test("친구 핀에는 수정/삭제 버튼이 보이지 않는다", async ({ br
     const infoOnB = pageB.getByTestId("place-info");
     await expect(infoOnB).toContainText(placeName);
     await expect(
-      infoOnB.getByRole("button", { name: "별점 수정" }),
+      infoOnB.getByRole("button", { name: "수정", exact: true }),
     ).not.toBeVisible();
     await expect(
       infoOnB.getByRole("button", { name: "삭제", exact: true }),
@@ -122,7 +122,7 @@ test("카드를 열어둔 채 친구가 별점을 고치면 카드도 실시간 
 
     // A가 별점 수정 → B의 열린 카드가 갱신된다
     const infoOnA = pageA.getByTestId("place-info");
-    await infoOnA.getByRole("button", { name: "별점 수정" }).click();
+    await infoOnA.getByRole("button", { name: "수정", exact: true }).click();
     await infoOnA.getByRole("button", { name: "별점 2점으로 변경" }).click();
     await infoOnA.getByRole("button", { name: "저장", exact: true }).click();
 

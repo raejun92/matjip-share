@@ -35,7 +35,7 @@ test("내 위치 버튼을 누르면 지도가 현재 위치로 이동한다", a
   await expect(info.or(picked).first()).toBeVisible({ timeout: 5_000 });
   if (await picked.isVisible().catch(() => false)) {
     await page
-      .getByRole("button", { name: /주변 (더 보기|에서 찾기)/ })
+      .getByRole("button", { name: /(주변 더 보기|주변에서 찾기)/ })
       .click({ timeout: 10_000 });
     await expect(page.getByTestId("nearby-sheet")).toContainText("부산", {
       timeout: 10_000,

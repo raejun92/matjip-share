@@ -23,6 +23,7 @@ export default function AddPlaceSheet({ user, onPreview, onAdded, onClose }: Pro
   const [candidates, setCandidates] = useState<PlaceCandidate[] | null>(null);
   const [selected, setSelected] = useState<PlaceCandidate | null>(null);
   const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +59,7 @@ export default function AddPlaceSheet({ user, onPreview, onAdded, onClose }: Pro
         lat: selected.lat,
         lng: selected.lng,
         rating,
+        comment,
       });
       onAdded(place);
     } catch {
@@ -149,12 +151,22 @@ export default function AddPlaceSheet({ user, onPreview, onAdded, onClose }: Pro
             <p className="text-sm text-gray-500">{selected.address}</p>
           </div>
           <StarRatingInput value={rating} onChange={setRating} />
+          <input
+            type="text"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="한줄평 (선택)"
+            aria-label="한줄평"
+            maxLength={200}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => {
                 setSelected(null);
                 setRating(0);
+                setComment("");
               }}
               className="flex-1 rounded-lg border border-gray-300 py-2.5 font-semibold text-gray-600"
             >

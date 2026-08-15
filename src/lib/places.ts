@@ -9,6 +9,8 @@ export type Place = {
   lat: number;
   lng: number;
   rating: number;
+  /** 작성자 한줄평 (선택, 최대 200자) — slice 19 */
+  comment: string;
   createdAt: string;
   /** 작성자 (users join) — 핀 색상/정보 표시에 사용 */
   author: { name: string; color: string };
@@ -21,6 +23,7 @@ export type NewPlace = {
   lat: number;
   lng: number;
   rating: number;
+  comment?: string;
 };
 
 type PlaceRow = {
@@ -31,12 +34,13 @@ type PlaceRow = {
   lat: number;
   lng: number;
   rating: number;
+  comment: string;
   created_at: string;
   users: { name: string; color: string } | null;
 };
 
 const SELECT =
-  "id, user_id, name, address, lat, lng, rating, created_at, users(name, color)";
+  "id, user_id, name, address, lat, lng, rating, comment, created_at, users(name, color)";
 
 function toPlace(row: PlaceRow): Place {
   return {
@@ -47,6 +51,7 @@ function toPlace(row: PlaceRow): Place {
     lat: row.lat,
     lng: row.lng,
     rating: row.rating,
+    comment: row.comment,
     createdAt: row.created_at,
     author: row.users ?? { name: "?", color: "#888888" },
   };
@@ -87,6 +92,7 @@ export async function addPlace(input: NewPlace): Promise<Place> {
       lat: input.lat,
       lng: input.lng,
       rating: input.rating,
+      comment: (input.comment ?? "").trim().slice(0, 200),
     })
     .select(SELECT)
     .single();
@@ -94,21 +100,24 @@ export async function addPlace(input: NewPlace): Promise<Place> {
   return toPlace(data as unknown as PlaceRow);
 }
 
-/** 별점 수정 (본인 핀 제한은 UI 레벨 — PRD §6.6) */
-export async function updatePlaceRating(
+/** 별점·한줄평 수정 (본인 핀 제한은 UI 레벨 — PRD §6.6) */
+export async function updatePlaceDetails(
   id: string,
-  rating: number,
+  details: { rating: number; comment: string },
 ): Promise<Place> {
-  if (!isValidRating(rating)) {
+  if (!isValidRating(details.rating)) {
     throw new Error("별점은 1~5 사이 정수여야 합니다.");
   }
   const { data, error } = await supabase
     .from("places")
-    .update({ rating })
+    .update({
+      rating: details.rating,
+      comment: details.comment.trim().slice(0, 200),
+    })
     .eq("id", id)
     .select(SELECT)
     .single();
-  if (error) throw new Error(`별점 수정 실패: ${error.message}`);
+  if (error) throw new Error(`수정 실패: ${error.message}`);
   return toPlace(data as unknown as PlaceRow);
 }
 
