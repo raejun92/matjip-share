@@ -33,13 +33,19 @@ test("맛집을 검색해 별점과 함께 저장하면 내 색 핀이 생긴다
     .textContent();
   await firstResult.click();
 
+  // 슬라이스 23: 선택하면 그 위치에 미리보기 마커
+  await expect(page.getByTestId("preview-point")).toBeVisible({
+    timeout: 5_000,
+  });
+
   // 별점 4점 → 저장
   await page.getByRole("button", { name: "별점 4점" }).click();
   await page.getByRole("button", { name: "저장", exact: true }).click();
 
-  // AC5: 시트 닫힘 + 내 색 핀 등장
+  // AC5: 시트 닫힘 + 내 색 핀 등장 + 미리보기 마커 제거
   // title엔 작성자가 포함되므로 이전 실행이 남긴 같은 이름의 핀과 구분된다
   await expect(page.getByTestId("add-place-sheet")).not.toBeVisible();
+  await expect(page.getByTestId("preview-point")).not.toBeVisible();
   const myPin = page.locator(
     `[data-testid="place-pin"][data-place-name="${placeName}"][title*="${name}"]`,
   );
