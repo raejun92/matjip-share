@@ -4,6 +4,9 @@
 export const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 export const DEFAULT_LEVEL = 5;
 
+/** 핀 이름 라벨을 보여주는 최대 줌 레벨 — 광역 뷰(10+)에선 겹침 방지로 숨김 (slice 21) */
+export const PIN_LABEL_MAX_LEVEL = 9;
+
 export function buildKakaoSdkUrl(appKey: string): string {
   if (!appKey) {
     throw new Error(
