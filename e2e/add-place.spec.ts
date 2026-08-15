@@ -41,7 +41,7 @@ test("맛집을 검색해 별점과 함께 저장하면 내 색 핀이 생긴다
   // title엔 작성자가 포함되므로 이전 실행이 남긴 같은 이름의 핀과 구분된다
   await expect(page.getByTestId("add-place-sheet")).not.toBeVisible();
   const myPin = page.locator(
-    `[data-testid="place-pin"][title="${placeName} (${name})"]`,
+    `[data-testid="place-pin"][data-place-name="${placeName}"][title*="${name}"]`,
   );
   await expect(myPin.first()).toBeVisible({ timeout: 10_000 });
 
@@ -67,7 +67,7 @@ test("맛집을 검색해 별점과 함께 저장하면 내 색 핀이 생긴다
   // 카드 닫고 핀 클릭으로 다시 열기
   await page.getByRole("button", { name: "정보 닫기" }).click();
   await expect(info).not.toBeVisible();
-  await myPin.first().click();
+  await myPin.first().locator("svg").click({ position: { x: 16, y: 30 } });
   await expect(page.getByTestId("place-info")).toContainText(placeName!);
 });
 
@@ -97,7 +97,7 @@ test("재접속하면 저장했던 핀이 다시 보인다", async ({ page }) =>
   await expect(page.getByTestId("my-badge")).toContainText(name);
   await expect(
     page
-      .locator(`[data-testid="place-pin"][title="${placeName} (${name})"]`)
+      .locator(`[data-testid="place-pin"][data-place-name="${placeName}"][title*="${name}"]`)
       .first(),
   ).toBeVisible({ timeout: 15_000 });
 });

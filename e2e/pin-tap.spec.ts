@@ -38,7 +38,7 @@ test("친구 핀에서 살짝 빗나간 탭도 그 핀의 정보 카드를 연�
     // B가 접속 → A 핀이 보임
     await enterAs(pageB, nameB);
     const pinOnB = pageB.locator(
-      `[data-testid="place-pin"][title="${placeName} (${nameA})"]`,
+      `[data-testid="place-pin"][data-place-name="${placeName}"][title*="${nameA}"]`,
     );
     await expect(pinOnB.first()).toBeVisible({ timeout: 15_000 });
 

@@ -51,10 +51,10 @@ test("친구 칩을 탭하면 그 친구 핀만 보이고, 다시 탭하면 전�
     // AC2: A 칩 탭 → A 핀만 렌더링 (B 핀은 DOM에서 제거) + 화면 맞춤으로 A 핀 보임
     await chips.getByRole("button", { name: nameA }).click();
     const pinA = pageB.locator(
-      `[data-testid="place-pin"][title="${placeA} (${nameA})"]`,
+      `[data-testid="place-pin"][data-place-name="${placeA}"][title*="${nameA}"]`,
     );
     const pinB = pageB.locator(
-      `[data-testid="place-pin"][title="${placeB} (${nameB})"]`,
+      `[data-testid="place-pin"][data-place-name="${placeB}"][title*="${nameB}"]`,
     );
     await expect(pinA.first()).toBeVisible({ timeout: 10_000 });
     await expect(pinB).toHaveCount(0);

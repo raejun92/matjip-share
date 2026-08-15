@@ -35,7 +35,7 @@ test("이름을 바꾸면 배지와 내 핀 작성자 표시가 갱신된다", a
 
   // 내 핀의 작성자 표시도 새 이름으로
   const myPin = page.locator(
-    `[data-testid="place-pin"][title="${placeName} (${after})"]`,
+    `[data-testid="place-pin"][data-place-name="${placeName}"][title*="${after}"]`,
   );
   await expect(myPin.first()).toBeVisible({ timeout: 10_000 });
 

@@ -1,6 +1,21 @@
 import { test, expect, type Page } from "@playwright/test";
 
 // 슬라이스 4 AC3: A가 핀을 추가하면 B 지도에 새로고침 없이 나타난다
+
+/** 핀 밀집과 무관한 결정적 카드 열기: 목록에서 가게+작성자 행 탭 */
+async function openCardViaList(page: Page, author: string, placeName: string) {
+  await page.getByRole("button", { name: "☰ 목록" }).click();
+  await page
+    .getByTestId("place-list-sheet")
+    .locator("li")
+    .filter({ hasText: placeName })
+    .filter({ hasText: author })
+    .first()
+    .locator("button")
+    .click();
+  await page.getByTestId("place-info").waitFor({ timeout: 10_000 });
+}
+
 async function enterAs(page: Page, name: string) {
   await page.goto("/");
   await page.getByRole("textbox", { name: "이름" }).fill(name);
@@ -45,12 +60,12 @@ test("친구가 추가한 핀이 내 지도에 실시간으로 나타난다", as
     // B 화면에 새로고침 없이 핀 등장 (A의 색으로)
     // title의 작성자로 이번 실행의 핀만 짚는다 (이전 실행 데이터와 구분)
     const pinOnB = pageB.locator(
-      `[data-testid="place-pin"][title="${placeName} (${nameA})"]`,
+      `[data-testid="place-pin"][data-place-name="${placeName}"][title*="${nameA}"]`,
     );
     await expect(pinOnB.first()).toBeVisible({ timeout: 15_000 });
 
-    // 핀 클릭 → 작성자가 A로 표시
-    await pinOnB.first().click();
+    // 카드 열기 → 작성자가 A로 표시
+    await openCardViaList(pageB, nameA, placeName!);
     const infoOnB = pageB.getByTestId("place-info");
     await expect(infoOnB).toContainText(placeName!);
     await expect(infoOnB).toContainText(nameA);

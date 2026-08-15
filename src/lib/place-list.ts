@@ -30,6 +30,46 @@ export function sortPlaces(list: Place[], sort: PlaceSort): Place[] {
   );
 }
 
+export type PlaceGroup = {
+  key: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  entries: Place[];
+};
+
+/** 같은 가게 판정 키 — 이름+좌표 (카카오 출처면 자동 일치) (slice 22) */
+export function placeGroupKey(p: {
+  name: string;
+  lat: number;
+  lng: number;
+}): string {
+  return `${p.name}|${p.lat}|${p.lng}`;
+}
+
+/** 같은 가게 핀들을 그룹으로 병합 (첫 등장 순 유지) — slice 22 */
+export function groupPlaces(list: Place[]): PlaceGroup[] {
+  const byKey = new Map<string, PlaceGroup>();
+  for (const p of list) {
+    const key = placeGroupKey(p);
+    const group = byKey.get(key);
+    if (group) {
+      group.entries.push(p);
+    } else {
+      byKey.set(key, {
+        key,
+        name: p.name,
+        address: p.address,
+        lat: p.lat,
+        lng: p.lng,
+        entries: [p],
+      });
+    }
+  }
+  return [...byKey.values()];
+}
+
 export type Author = { userId: string; name: string; color: string };
 
 /** 핀 목록에서 중복 없는 작성자 목록 (첫 등장 순) — 친구 필터 칩용 (slice 10) */

@@ -4,6 +4,8 @@ import {
   removePlace,
   uniqueAuthors,
   sortPlaces,
+  groupPlaces,
+  placeGroupKey,
 } from "./place-list";
 import type { Place } from "./places";
 
@@ -129,5 +131,66 @@ describe("sortPlaces", () => {
     const copy = [...list];
     sortPlaces(list, "latest");
     expect(list).toEqual(copy);
+  });
+});
+
+// AC1(슬라이스 22): 같은 가게(이름+좌표) 핀 병합
+const placeAtCoord = (
+  id: string,
+  userId: string,
+  name: string,
+  lat: number,
+  lng: number,
+): Place => ({
+  ...placeBy(id, userId, "친구" + userId),
+  name,
+  lat,
+  lng,
+});
+
+describe("groupPlaces", () => {
+  it("이름+좌표가 같으면 한 그룹으로 묶는다 (같은 가게 두 명 저장)", () => {
+    const list = [
+      placeAtCoord("p1", "u1", "진주회관", 37.56, 126.97),
+      placeAtCoord("p2", "u2", "진주회관", 37.56, 126.97),
+    ];
+    const groups = groupPlaces(list);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].name).toBe("진주회관");
+    expect(groups[0].entries.map((e) => e.id)).toEqual(["p1", "p2"]);
+  });
+
+  it("이름이 같아도 좌표가 다르면 다른 그룹 (체인점)", () => {
+    const list = [
+      placeAtCoord("p1", "u1", "스타벅스", 37.56, 126.97),
+      placeAtCoord("p2", "u2", "스타벅스", 35.17, 129.07),
+    ];
+    expect(groupPlaces(list)).toHaveLength(2);
+  });
+
+  it("좌표가 같아도 이름이 다르면 다른 그룹 (같은 건물)", () => {
+    const list = [
+      placeAtCoord("p1", "u1", "홍미관", 35.2, 129.0),
+      placeAtCoord("p2", "u2", "꾼들의공연", 35.2, 129.0),
+    ];
+    expect(groupPlaces(list)).toHaveLength(2);
+  });
+
+  it("첫 등장 순서를 유지한다", () => {
+    const list = [
+      placeAtCoord("p1", "u1", "B집", 37.5, 127.0),
+      placeAtCoord("p2", "u2", "A집", 37.6, 127.1),
+      placeAtCoord("p3", "u3", "B집", 37.5, 127.0),
+    ];
+    expect(groupPlaces(list).map((g) => g.name)).toEqual(["B집", "A집"]);
+  });
+
+  it("selected가 속한 그룹을 key로 찾을 수 있다", () => {
+    const a = placeAtCoord("p1", "u1", "진주회관", 37.56, 126.97);
+    const b = placeAtCoord("p2", "u2", "진주회관", 37.56, 126.97);
+    expect(placeGroupKey(a)).toBe(placeGroupKey(b));
+    expect(placeGroupKey(a)).not.toBe(
+      placeGroupKey(placeAtCoord("p3", "u3", "딴집", 37.56, 126.97)),
+    );
   });
 });

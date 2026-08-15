@@ -63,7 +63,7 @@ test("멀리 있는 친구 핀도 접속하면 지도에 보인다", async ({ br
     await pageB.getByRole("button", { name: "시작하기" }).click();
     await expect(
       pageB
-        .locator(`[data-testid="place-pin"][title="${placeName} (${nameA})"]`)
+        .locator(`[data-testid="place-pin"][data-place-name="${placeName}"][title*="${nameA}"]`)
         .first(),
     ).toBeVisible({ timeout: 15_000 });
   } finally {
