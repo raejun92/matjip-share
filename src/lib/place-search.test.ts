@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   mapKakaoDocuments,
   mergeNearby,
-  pickDirectSuggestion,
+  pickDirectSuggestions,
   type PlaceCandidate,
   type NearbyCandidate,
 } from "./place-search";
@@ -129,26 +129,44 @@ const candidate = (id: string, distanceM: number): NearbyCandidate => ({
   distanceM,
 });
 
-describe("pickDirectSuggestion", () => {
-  it("최근접 후보가 임계값 이내면 그 후보를 반환한다", () => {
+describe("pickDirectSuggestions", () => {
+  it("임계값 내 후보가 하나면 그 하나만 반환한다", () => {
     const list = [candidate("a", 12), candidate("b", 80)];
-    expect(pickDirectSuggestion(list, 30)?.kakaoId).toBe("a");
+    expect(pickDirectSuggestions(list, 30).map((c) => c.kakaoId)).toEqual(["a"]);
+  });
+
+  it("같은 건물(동률 0m) 후보들은 모두 반환한다 — 홍미관/꾼들의공연 케이스", () => {
+    const list = [candidate("꾼들의공연", 0), candidate("홍미관", 0)];
+    expect(pickDirectSuggestions(list, 30).map((c) => c.kakaoId)).toEqual([
+      "꾼들의공연",
+      "홍미관",
+    ]);
+  });
+
+  it("임계값 내 후보를 가까운 순으로 정렬해 반환한다", () => {
+    const list = [candidate("b", 25), candidate("a", 5), candidate("far", 200)];
+    expect(pickDirectSuggestions(list, 30).map((c) => c.kakaoId)).toEqual([
+      "a",
+      "b",
+    ]);
+  });
+
+  it("최대 3곳까지만 반환한다", () => {
+    const list = [
+      candidate("a", 1),
+      candidate("b", 2),
+      candidate("c", 3),
+      candidate("d", 4),
+    ];
+    expect(pickDirectSuggestions(list, 30)).toHaveLength(3);
   });
 
   it("경계값(정확히 임계값)도 포함한다", () => {
-    expect(pickDirectSuggestion([candidate("a", 30)], 30)?.kakaoId).toBe("a");
+    expect(pickDirectSuggestions([candidate("a", 30)], 30)).toHaveLength(1);
   });
 
-  it("최근접이 임계값 밖이면 null", () => {
-    expect(pickDirectSuggestion([candidate("a", 31)], 30)).toBeNull();
-  });
-
-  it("빈 목록이면 null", () => {
-    expect(pickDirectSuggestion([], 30)).toBeNull();
-  });
-
-  it("목록이 거리순이 아니어도 최근접 기준으로 판정한다", () => {
-    const list = [candidate("far", 200), candidate("near", 10)];
-    expect(pickDirectSuggestion(list, 30)?.kakaoId).toBe("near");
+  it("임계값 내 후보가 없으면 빈 배열", () => {
+    expect(pickDirectSuggestions([candidate("a", 31)], 30)).toEqual([]);
+    expect(pickDirectSuggestions([], 30)).toEqual([]);
   });
 });

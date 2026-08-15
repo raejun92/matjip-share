@@ -11,7 +11,7 @@ import BadgeMenu from "./BadgeMenu";
 import { getPlaces, getPlaceById, type Place } from "@/lib/places";
 import { upsertPlace, removePlace, uniqueAuthors } from "@/lib/place-list";
 import {
-  pickDirectSuggestion,
+  pickDirectSuggestions,
   type NearbyCandidate,
 } from "@/lib/place-search";
 import { findNearestWithin, PIN_HIT_RADIUS_PX } from "@/lib/hit-test";
@@ -40,8 +40,10 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
   const [pickedPoint, setPickedPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [nearbyData, setNearbyData] = useState<NearbyData | null>(null);
   const [nearbyOpen, setNearbyOpen] = useState(false);
-  // 가게 라벨 탭 판정 시 별점 화면으로 바로 진입할 후보
-  const [directCandidate, setDirectCandidate] = useState<NearbyCandidate | null>(null);
+  // 가게 라벨 탭 판정 시 제안할 후보들 (같은 건물이면 복수 — slice 20)
+  const [directCandidates, setDirectCandidates] = useState<NearbyCandidate[]>([]);
+  // 후보 버튼으로 고른 가게 (별점 화면 직행용)
+  const [chosenCandidate, setChosenCandidate] = useState<NearbyCandidate | null>(null);
   // 연속 탭 시 이전 응답이 덮어쓰지 않게 시퀀스 가드
   const tapSeqRef = useRef(0);
   // 내 위치 버튼 상태 (slice 8) + 파란 점 표시 (slice 16)
@@ -142,7 +144,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
           tapSeqRef.current++; // 진행 중인 주변 조회 응답 무시
           setPickedPoint(null);
           setNearbyData(null);
-          setDirectCandidate(null);
+          setDirectCandidates([]);
+          setChosenCandidate(null);
           setNearbyOpen(false);
           return;
         }
@@ -160,7 +163,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
         setSelected(hit.place);
         setPickedPoint(null);
         setNearbyOpen(false);
-        setDirectCandidate(null);
+        setDirectCandidates([]);
+        setChosenCandidate(null);
         setSheetOpen(false);
         return;
       }
@@ -169,7 +173,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
       const seq = ++tapSeqRef.current;
       setPickedPoint(point);
       setNearbyData(null);
-      setDirectCandidate(null);
+      setDirectCandidates([]);
+      setChosenCandidate(null);
       setNearbyOpen(false);
       setSelected(null);
       setSheetOpen(false);
@@ -180,8 +185,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
         .then((data: NearbyData) => {
           if (seq !== tapSeqRef.current) return; // 더 최근 탭이 있음
           setNearbyData(data);
-          // 가게 라벨을 노린 탭이면 바로 추가 제안 (spec 규칙 2)
-          setDirectCandidate(pickDirectSuggestion(data.candidates));
+          // 가게 라벨을 노린 탭이면 바로 추가 제안 — 같은 건물이면 복수 (slice 20)
+          setDirectCandidates(pickDirectSuggestions(data.candidates));
         });
     };
     event.addListener(map, "click", handleClick);
@@ -331,7 +336,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     setSheetOpen(false);
     setNearbyOpen(false);
     setPickedPoint(null);
-    setDirectCandidate(null);
+    setDirectCandidates([]);
+    setChosenCandidate(null);
     setSelected(place);
     panTo(place);
   }
@@ -466,53 +472,87 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
         />
       )}
 
-      {/* 탭 지점 popover (slice 6·7): 확인 중 → 가게 바로 추가 or 주변 찾기 */}
+      {/* 탭 지점 popover (slice 6·7·20): 확인 중 → 후보 제안(같은 건물이면 복수) or 주변 찾기 */}
       {/* 컨테이너는 전체 폭 — pointer-events-none으로 알약 밖 클릭을 삼키지 않게 한다 */}
       {pickedPoint && !nearbyOpen && !sheetOpen && (
         <div className="pointer-events-none absolute inset-x-4 bottom-6 z-10 flex justify-center">
-          <div className="pointer-events-auto flex max-w-full items-center gap-1 rounded-full bg-white py-1.5 pl-4 pr-1.5 shadow-lg">
+          <div className="pointer-events-auto max-w-full rounded-2xl bg-white px-2 py-1.5 shadow-lg">
             {nearbyData === null ? (
-              <span className="text-sm text-gray-400">주변 확인 중…</span>
-            ) : directCandidate ? (
-              <>
+              <div className="flex items-center gap-1">
+                <span className="px-2 text-sm text-gray-400">주변 확인 중…</span>
                 <button
                   type="button"
-                  onClick={() => {
-                    panToCoords(directCandidate.lat, directCandidate.lng);
-                    setNearbyOpen(true);
-                  }}
-                  className="truncate text-sm font-semibold text-blue-600"
+                  onClick={() => setPickedPoint(null)}
+                  aria-label="지점 선택 취소"
+                  className="shrink-0 rounded-full px-2.5 py-1 text-gray-400 hover:bg-gray-100"
                 >
-                  📍 {directCandidate.name} 추가하기
+                  ✕
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDirectCandidate(null);
-                    setNearbyOpen(true);
-                  }}
-                  className="shrink-0 border-l border-gray-200 pl-2 text-sm text-gray-500"
-                >
-                  주변 더 보기
-                </button>
-              </>
+              </div>
+            ) : directCandidates.length > 0 ? (
+              <div className="flex flex-col">
+                {/* 같은 건물에 여러 가게면 전부 보여주고 고르게 한다 (slice 20) */}
+                {directCandidates.map((c) => (
+                  <button
+                    key={c.kakaoId}
+                    type="button"
+                    data-testid="direct-suggestion"
+                    data-name={c.name}
+                    onClick={() => {
+                      setChosenCandidate(c);
+                      panToCoords(c.lat, c.lng);
+                      setNearbyOpen(true);
+                    }}
+                    className="truncate rounded-lg px-2 py-1.5 text-left text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                  >
+                    📍 {c.name}
+                    {c.category && (
+                      <span className="ml-1.5 text-xs font-normal text-gray-400">
+                        {c.category}
+                      </span>
+                    )}
+                  </button>
+                ))}
+                <div className="mt-0.5 flex items-center justify-center gap-1 border-t border-gray-100 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setChosenCandidate(null);
+                      setNearbyOpen(true);
+                    }}
+                    className="px-2 py-1 text-sm text-gray-500"
+                  >
+                    주변 더 보기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPickedPoint(null)}
+                    aria-label="지점 선택 취소"
+                    className="shrink-0 rounded-full px-2.5 py-1 text-gray-400 hover:bg-gray-100"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setNearbyOpen(true)}
-                className="text-sm font-semibold text-blue-600"
-              >
-                📍 이 위치 주변에서 찾기
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setNearbyOpen(true)}
+                  className="px-2 text-sm font-semibold text-blue-600"
+                >
+                  📍 이 위치 주변에서 찾기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickedPoint(null)}
+                  aria-label="지점 선택 취소"
+                  className="shrink-0 rounded-full px-2.5 py-1 text-gray-400 hover:bg-gray-100"
+                >
+                  ✕
+                </button>
+              </div>
             )}
-            <button
-              type="button"
-              onClick={() => setPickedPoint(null)}
-              aria-label="지점 선택 취소"
-              className="shrink-0 rounded-full px-2.5 py-1 text-gray-400 hover:bg-gray-100"
-            >
-              ✕
-            </button>
           </div>
         </div>
       )}
@@ -523,13 +563,14 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
           point={pickedPoint}
           candidates={nearbyData.candidates}
           pointAddress={nearbyData.address}
-          initialSelected={directCandidate}
+          initialSelected={chosenCandidate}
           onPreview={panToCoords}
           onAdded={handleAdded}
           onClose={() => {
             setNearbyOpen(false);
             setPickedPoint(null);
-            setDirectCandidate(null);
+            setDirectCandidates([]);
+            setChosenCandidate(null);
           }}
         />
       )}

@@ -66,17 +66,19 @@ export function mergeNearby(
 /** 가게 라벨을 노린 탭으로 간주하는 거리 (m) — slice 7 */
 export const DIRECT_TAP_THRESHOLD_M = 30;
 
+const DIRECT_SUGGESTION_MAX = 3;
+
 /**
- * 탭 지점의 최근접 가게가 임계값 이내면 "바로 추가" 제안 대상으로 반환.
- * 카카오 웹 SDK엔 POI 탭 이벤트가 없어 거리로 근사한다 (slice 7, AC1).
+ * 탭 지점 임계값 이내의 가게들을 가까운 순으로 반환 (최대 3곳).
+ * 같은 건물에 여러 가게가 있으면(좌표 동률) 하나를 단정할 수 없으므로
+ * 전부 제안해 사용자가 고르게 한다 (slice 7 → slice 20 확장).
  */
-export function pickDirectSuggestion(
+export function pickDirectSuggestions(
   candidates: NearbyCandidate[],
   thresholdM: number = DIRECT_TAP_THRESHOLD_M,
-): NearbyCandidate | null {
-  let nearest: NearbyCandidate | null = null;
-  for (const c of candidates) {
-    if (!nearest || c.distanceM < nearest.distanceM) nearest = c;
-  }
-  return nearest && nearest.distanceM <= thresholdM ? nearest : null;
+): NearbyCandidate[] {
+  return candidates
+    .filter((c) => c.distanceM <= thresholdM)
+    .sort((a, b) => a.distanceM - b.distanceM)
+    .slice(0, DIRECT_SUGGESTION_MAX);
 }

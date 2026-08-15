@@ -83,17 +83,14 @@ test("가게 근접 탭이면 바로 추가 제안으로 저장할 수 있다 (�
   await enterAs(page, name);
 
   await tapMapCenter(page);
-  // 지도 중심이 가게 30m 내면 직접 제안, 아니면 목록으로 — 둘 다 저장까지 완주
-  const directBtn = page.getByRole("button", { name: /추가하기$/ });
+  // 지도 중심이 가게 30m 내면 직접 제안(같은 건물이면 복수 버튼), 아니면 목록으로 — 둘 다 저장까지 완주
+  const directBtn = page.getByTestId("direct-suggestion").first();
   const listBtn = page.getByRole("button", { name: /(주변 더 보기|주변에서 찾기)/ });
   await expect(directBtn.or(listBtn).first()).toBeVisible({ timeout: 10_000 });
 
   let placeName: string;
   if (await directBtn.isVisible()) {
-    placeName = (await directBtn.innerText())
-      .replace("📍", "")
-      .replace("추가하기", "")
-      .trim();
+    placeName = (await directBtn.getAttribute("data-name"))!;
     await directBtn.click();
     // 별점 화면으로 바로 진입 (목록 건너뜀)
     await expect(page.getByTestId("nearby-sheet")).toContainText(placeName);
