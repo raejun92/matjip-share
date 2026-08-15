@@ -9,7 +9,13 @@ import PlaceInfoCard from "./PlaceInfoCard";
 import PlaceListSheet from "./PlaceListSheet";
 import BadgeMenu from "./BadgeMenu";
 import { getPlaces, getPlaceById, type Place } from "@/lib/places";
-import { upsertPlace, removePlace, uniqueAuthors } from "@/lib/place-list";
+import {
+  upsertPlace,
+  removePlace,
+  uniqueAuthors,
+  groupPlaces,
+  placeGroupKey,
+} from "@/lib/place-list";
 import {
   pickDirectSuggestions,
   type NearbyCandidate,
@@ -101,7 +107,12 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     (m: unknown) => setMap(m as KakaoMapInstance),
     [],
   );
-  const handleSelect = useCallback((place: Place) => setSelected(place), []);
+  // 핀 버튼 클릭 직후의 지도 click은 무시 (카카오가 캡처 단계로 처리해 전파 차단이 안 통함)
+  const pinClickAtRef = useRef(0);
+  const handleSelect = useCallback((place: Place) => {
+    pinClickAtRef.current = Date.now();
+    setSelected(place);
+  }, []);
 
   // 접속 시 저장된 핀이 전부 화면에 들어오게 1회 범위 맞춤.
   // 없으면 기본 중심(서울시청) 밖 핀이 컬링돼 "빈 지도"로 보인다.
@@ -125,6 +136,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     if (!map || !window.kakao) return;
     const { event } = window.kakao.maps;
     const handleClick = (e: { latLng: { getLat(): number; getLng(): number } }) => {
+      // 방금 핀 버튼이 직접 처리한 클릭이면 무시 (이중 처리로 다른 핀이 선택되는 것 방지)
+      if (Date.now() - pinClickAtRef.current < 300) return;
       // 탭 지점이 화면상 핀 근처면 추가 흐름 대신 그 핀을 연다 (slice 11).
       // 핀의 실질 탭 영역을 키워 "핀 클릭 = 생성"으로 오인되는 문제 해결.
       const { maps } = window.kakao!;
@@ -154,7 +167,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
         }
       }
 
-      const pinPoints = visiblePlacesRef.current.map((place) => {
+      const pinPoints = groupPlaces(visiblePlacesRef.current).map((group) => {
+        const place = group.entries[0];
         const pt = projection.containerPointFromCoords(
           new maps.LatLng(place.lat, place.lng),
         );
@@ -297,6 +311,8 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     : places;
   visiblePlacesRef.current = visiblePlaces;
   pickedPointRef.current = pickedPoint;
+  // 같은 가게 병합 (slice 22) — 표시 계층에서만 파생
+  const groups = groupPlaces(visiblePlaces);
 
   function toggleFilter(userId: string) {
     const next = filterUserId === userId ? null : userId;
@@ -360,7 +376,7 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
       <KakaoMap onMapReady={handleMapReady} />
       <PlacePins
         map={map}
-        places={visiblePlaces}
+        groups={groups}
         showLabels={zoomLevel <= PIN_LABEL_MAX_LEVEL}
         onSelect={handleSelect}
       />
@@ -593,12 +609,18 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
         />
       )}
 
-      {/* 핀 정보 카드 (내 핀이면 수정/삭제 가능 — PRD §6.6) */}
+      {/* 핀 정보 카드 — 같은 가게 저장 전원 표시 (slice 22, PRD §6.6) */}
       {selected && !sheetOpen && (
         <PlaceInfoCard
-          key={`${selected.id}-${selected.rating}`}
-          place={selected}
-          isMine={selected.userId === user.id}
+          key={placeGroupKey(selected)}
+          entries={(() => {
+            const key = placeGroupKey(selected);
+            const entries = visiblePlaces.filter(
+              (p) => placeGroupKey(p) === key,
+            );
+            return entries.length > 0 ? entries : [selected];
+          })()}
+          currentUser={user}
           onClose={() => setSelected(null)}
           onUpdated={(updated) => {
             setPlaces((prev) => upsertPlace(prev, updated));
@@ -607,6 +629,10 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
           onDeleted={(placeId) => {
             setPlaces((prev) => removePlace(prev, placeId));
             setSelected(null);
+          }}
+          onAdded={(added) => {
+            setPlaces((prev) => [...prev, added]);
+            setSelected(added);
           }}
         />
       )}

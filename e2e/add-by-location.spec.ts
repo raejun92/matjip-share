@@ -70,7 +70,7 @@ test("지도를 탭하면 주변 가게 목록에서 골라 저장할 수 있다
   await expect(sheet).not.toBeVisible();
   await expect(
     page
-      .locator(`[data-testid="place-pin"][title="${placeName} (${name})"]`)
+      .locator(`[data-testid="place-pin"][data-place-name="${placeName}"][title*="${name}"]`)
       .first(),
   ).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId("place-info")).toContainText(placeName!);
@@ -108,7 +108,7 @@ test("가게 근접 탭이면 바로 추가 제안으로 저장할 수 있다 (�
   await page.getByRole("button", { name: "저장", exact: true }).click();
   await expect(
     page
-      .locator(`[data-testid="place-pin"][title="${placeName} (${name})"]`)
+      .locator(`[data-testid="place-pin"][data-place-name="${placeName}"][title*="${name}"]`)
       .first(),
   ).toBeVisible({ timeout: 10_000 });
 });
@@ -130,7 +130,7 @@ test("목록에 없는 가게는 직접 입력으로 탭 지점에 저장할 수
   await expect(sheet).not.toBeVisible();
   await expect(
     page
-      .locator(`[data-testid="place-pin"][title="${shopName} (${name})"]`)
+      .locator(`[data-testid="place-pin"][data-place-name="${shopName}"][title*="${name}"]`)
       .first(),
   ).toBeVisible({ timeout: 10_000 });
 });

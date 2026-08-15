@@ -9,7 +9,9 @@ export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  // 로컬 1회 재시도: 로컬 Supabase Realtime 컨테이너가 부하로 재시작하며
+  // 이벤트를 떨어뜨리는 인프라 플레이크 흡수 (코드 회귀는 재시도로도 실패함)
+  retries: process.env.CI ? 2 : 1,
   reporter: "list",
   use: {
     baseURL,

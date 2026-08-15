@@ -8,6 +8,21 @@ async function enterAs(page: Page, name: string) {
   await expect(page.getByTestId("my-badge")).toContainText(name);
 }
 
+
+/** 핀 밀집과 무관한 결정적 카드 열기: 목록에서 가게+작성자 행 탭 */
+async function openCardViaList(page: Page, author: string, placeName: string) {
+  await page.getByRole("button", { name: "☰ 목록" }).click();
+  await page
+    .getByTestId("place-list-sheet")
+    .locator("li")
+    .filter({ hasText: placeName })
+    .filter({ hasText: author })
+    .first()
+    .locator("button")
+    .click();
+  await page.getByTestId("place-info").waitFor({ timeout: 10_000 });
+}
+
 async function addPlaceViaUi(page: Page, query: string, ratingLabel: string) {
   await page.getByRole("button", { name: "+ 맛집 추가" }).click();
   await page.getByRole("textbox", { name: "가게 검색" }).fill(query);
@@ -56,7 +71,7 @@ test("내 핀을 삭제하면 지도에서 사라진다", async ({ page }) => {
   // 카드 닫히고 핀 제거
   await expect(info).not.toBeVisible();
   await expect(
-    page.locator(`[data-testid="place-pin"][title="${placeName} (${name})"]`),
+    page.locator(`[data-testid="place-pin"][data-place-name="${placeName}"][title*="${name}"]`),
   ).toHaveCount(0);
 });
 
@@ -75,10 +90,10 @@ test("친구 핀에는 수정/삭제 버튼이 보이지 않는다", async ({ br
 
     await enterAs(pageB, nameB);
     const pinOnB = pageB.locator(
-      `[data-testid="place-pin"][title="${placeName} (${nameA})"]`,
+      `[data-testid="place-pin"][data-place-name="${placeName}"][title*="${nameA}"]`,
     );
     await expect(pinOnB.first()).toBeVisible({ timeout: 15_000 });
-    await pinOnB.first().click();
+    await openCardViaList(pageB, nameA, placeName);
 
     // AC4: 남의 핀 카드 — 버튼 없음
     const infoOnB = pageB.getByTestId("place-info");
@@ -113,10 +128,10 @@ test("카드를 열어둔 채 친구가 별점을 고치면 카드도 실시간 
     // B가 그 핀의 카드를 열어둔다
     await enterAs(pageB, nameB);
     const pinOnB = pageB.locator(
-      `[data-testid="place-pin"][title="${placeName} (${nameA})"]`,
+      `[data-testid="place-pin"][data-place-name="${placeName}"][title*="${nameA}"]`,
     );
     await expect(pinOnB.first()).toBeVisible({ timeout: 15_000 });
-    await pinOnB.first().click();
+    await openCardViaList(pageB, nameA, placeName);
     const infoOnB = pageB.getByTestId("place-info");
     await expect(infoOnB).toContainText("4점");
 
@@ -150,7 +165,7 @@ test("친구가 핀을 삭제하면 내 지도에서도 실시간으로 사라�
 
     await enterAs(pageB, nameB);
     const pinOnB = pageB.locator(
-      `[data-testid="place-pin"][title="${placeName} (${nameA})"]`,
+      `[data-testid="place-pin"][data-place-name="${placeName}"][title*="${nameA}"]`,
     );
     await expect(pinOnB.first()).toBeVisible({ timeout: 15_000 });
 
