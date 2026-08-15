@@ -297,12 +297,13 @@ export default function MapView({ user, onUserChange, onSwitchUser }: Props) {
     const content = document.createElement("div");
     content.dataset.testid = "preview-point";
     content.style.cssText = "line-height:0;pointer-events:none;";
+    // 점선 테두리의 속 빈 핀 — "아직 저장 안 된 임시 위치" 표시.
+    // 색을 채운 물방울(유저 핀)과 모양부터 달라 어떤 유저 색과도 혼동되지 않는다.
     content.innerHTML = `
 <svg width="30" height="38" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
-  <path d="M16 0C7.2 0 0 7.2 0 16c0 10.7 13.1 22.2 14.6 23.4a2.2 2.2 0 0 0 2.8 0C18.9 38.2 32 26.7 32 16 32 7.2 24.8 0 16 0z"
-        fill="#2563EB" stroke="white" stroke-width="2"/>
-  <circle cx="16" cy="15" r="6" fill="white"/>
-  <circle cx="16" cy="15" r="3" fill="#2563EB"/>
+  <path d="M16 1.5C8 1.5 1.5 8 1.5 16c0 10 12.2 20.7 13.6 21.9a1.4 1.4 0 0 0 1.8 0C18.3 36.7 30.5 26 30.5 16 30.5 8 24 1.5 16 1.5z"
+        fill="rgba(255,255,255,0.9)" stroke="#111827" stroke-width="2.5" stroke-dasharray="4.5 3"/>
+  <circle cx="16" cy="15" r="3.5" fill="#111827"/>
 </svg>`;
     const overlay = new maps.CustomOverlay({
       position: new maps.LatLng(previewPoint.lat, previewPoint.lng),
